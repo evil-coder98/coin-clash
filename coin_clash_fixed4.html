@@ -1,0 +1,5151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+
+<title>Coin Clash</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+    --bg: #080808;
+    --panel: #111;
+    --panel2: #171717;
+    --border: #383838;
+    --text: #eee;
+    --muted: #888;
+    --guard: #6f9dc7;
+    --danger: #c94d4d;
+    --gold: #d5b75a;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: monospace;
+}
+
+body {
+    overflow-x: hidden;
+    overscroll-behavior: none;
+}
+
+button {
+    font: inherit;
+    color: inherit;
+    background: #151515;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    touch-action: manipulation;
+}
+
+button:active {
+    transform: scale(.97);
+}
+
+#app {
+    width: min(1050px, 100%);
+    margin: auto;
+    padding: 10px;
+}
+
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: block;
+}
+
+/* =========================================================
+   MAIN MENU
+========================================================= */
+
+#menuScreen {
+    min-height: 90vh;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+#menuScreen.active {
+    display: flex;
+}
+
+.logo {
+    font-size: clamp(35px, 10vw, 70px);
+    letter-spacing: 7px;
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    color: var(--muted);
+    margin-bottom: 45px;
+}
+
+.menuButton {
+    display: block;
+    width: min(360px, 90vw);
+    height: 55px;
+    margin: 8px auto;
+    font-size: 16px;
+    letter-spacing: 2px;
+}
+
+.menuInfo {
+    margin-top: 35px;
+    color: #555;
+    font-size: 10px;
+}
+
+/* =========================================================
+   TOP BAR
+========================================================= */
+
+#topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 3px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.topStat {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.topStat strong {
+    color: var(--text);
+}
+
+/* =========================================================
+   DUNGEON
+========================================================= */
+
+#dungeonScreen {
+    text-align: center;
+}
+
+.screenTitle {
+    font-size: 22px;
+    letter-spacing: 3px;
+    margin: 12px 0 4px;
+}
+
+.screenSub {
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 18px;
+}
+
+#map {
+    position: relative;
+    width: 100%;
+    min-height: 500px;
+    border: 1px solid var(--border);
+    background:
+        radial-gradient(circle at center, #171717 0, #0b0b0b 65%);
+    overflow: hidden;
+}
+
+.mapPath {
+    position: absolute;
+    height: 2px;
+    background: #303030;
+    transform-origin: left center;
+    z-index: 1;
+}
+
+.mapNode {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    border-radius: 50%;
+    background: #111;
+    border: 2px solid #444;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.mapNode.available {
+    border-color: #ddd;
+    box-shadow: 0 0 12px #333;
+}
+
+.mapNode.completed {
+    opacity: .35;
+}
+
+.mapNode.locked {
+    opacity: .18;
+}
+
+.mapNode.battle {
+    border-color: #888;
+}
+
+.mapNode.elite {
+    border-color: #b57a55;
+}
+
+.mapNode.shop {
+    border-color: var(--gold);
+}
+
+.mapNode.boss {
+    border-color: #c94d4d;
+}
+
+/* Clean three-column dungeon graph */
+#map { min-height: 700px; padding: 12px; overflow: hidden; position:relative; }
+.mapPath { position:absolute; height:3px; background:#292929; transform-origin:0 50%; z-index:1; pointer-events:none; border-radius:3px; opacity:.45; }
+.mapPath.active { background:#777; opacity:1; box-shadow:0 0 7px #555; }
+.mapNode { position:absolute; width:96px; height:78px; transform:translate(-50%,-50%); border-radius:8px; padding:5px; z-index:3; cursor:default; transition:opacity .15s, filter .15s, box-shadow .15s, transform .1s; }
+.mapNode .nodeIcon { font-size:19px; }
+.mapNode .nodeLabel { margin:2px 0 0; font-size:8px; line-height:1.25; }
+.mapNode .nodeReward { font-size:8px; color:var(--gold); margin-top:2px; }
+.mapNode.available { border-color:#eee; box-shadow:0 0 16px #555; cursor:pointer; }
+.mapNode.available:active { transform:translate(-50%,-50%) scale(.95); }
+.mapNode.locked, .mapNode.unlocked, .mapNode.completed { opacity:.16; filter:grayscale(1); box-shadow:none !important; border-color:#333 !important; color:#555; }
+.mapNode.easy, .mapNode.normal, .mapNode.hard, .mapNode.challenge, .mapNode.boss { box-shadow:none; }
+.mapNode.available.easy { border-color:#aaa; box-shadow:0 0 12px #777; }
+.mapNode.available.normal { border-color:#6d91b8; box-shadow:0 0 14px rgba(109,145,184,.5); }
+.mapNode.available.hard { border-color:#c58a4b; box-shadow:0 0 15px rgba(197,138,75,.55); }
+.mapNode.available.challenge { border-color:#a16bc2; box-shadow:0 0 16px rgba(161,107,194,.6); }
+.mapNode.available.boss { border-color:#d04c4c; box-shadow:0 0 16px rgba(208,76,76,.6); }
+.mapLegend { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:8px 0 10px; font-size:7px; color:#888; }
+.mapLegend span { padding:4px 6px; border:1px solid #333; border-radius:4px; }
+.legendEasy{border-color:#777!important}.legendNormal{border-color:#6d91b8!important}.legendHard{border-color:#c58a4b!important}.legendChallenge{border-color:#a16bc2!important}.legendBoss{border-color:#d04c4c!important}
+
+.staggered { animation: staggerPulse .7s infinite alternate; filter: grayscale(.35); }
+@keyframes staggerPulse { from { opacity: .55; } to { opacity: 1; } }
+.statusText { min-height: 14px; font-size: 8px; letter-spacing: 1px; color: var(--danger); }
+
+.nodeIcon {
+    font-size: 20px;
+}
+
+.nodeLabel {
+    font-size: 8px;
+    margin-top: 3px;
+}
+
+#mapFooter {
+    padding: 10px;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+/* =========================================================
+   SHOP
+========================================================= */
+
+#shopScreen {
+    text-align: center;
+}
+
+.shopHeader {
+    border: 1px solid var(--border);
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.cost {
+    color: var(--gold);
+    font-size: 18px;
+}
+
+#shopItems {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.shopItem {
+    text-align: left;
+    padding: 12px;
+    min-height: 135px;
+    background: var(--panel);
+}
+
+.shopItem h3 {
+    margin: 0 0 6px;
+}
+
+.shopItem p {
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.5;
+}
+
+.shopItem button {
+    width: 100%;
+    height: 36px;
+    margin-top: 6px;
+}
+
+.shopItem button:disabled {
+    opacity: .3;
+}
+
+#leaveShop {
+    width: 100%;
+    height: 50px;
+    margin-top: 10px;
+    background: #ddd;
+    color: #080808;
+}
+
+/* =========================================================
+   FLOOR MUTATION CHOICE
+========================================================= */
+#floorChoiceScreen{text-align:center}
+#floorChoices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}
+.floorChoice{min-height:190px;text-align:left;padding:12px;background:var(--panel);border:1px solid #444}
+.floorChoice h3{font-size:12px;margin:0 0 8px}.floorChoice p{font-size:9px;color:#999;line-height:1.45}.floorChoice .trade{margin-top:12px;padding-top:8px;border-top:1px solid #292929;font-size:8px}.floorChoice button{width:100%;margin-top:12px;height:38px}
+.enemyModifierList{display:flex;gap:5px;flex-wrap:wrap;padding:6px 0}.modifierBadge{border:1px solid #555;padding:4px 6px;font-size:7px;color:#bbb;cursor:pointer}.modifierBadge:hover{border-color:#aaa}
+.sanityText{font-size:8px;color:#aaa;letter-spacing:1px;margin-top:3px}.sanityGood{color:#9fd39f}.sanityBad{color:#d38f8f}
+
+/* =========================================================
+   COMBAT
+========================================================= */
+
+#combatScreen {
+    position: relative;
+}
+
+#battlefield {
+    position: relative;
+    min-height: 310px;
+    background:
+        linear-gradient(
+            to bottom,
+            #101010 0%,
+            #101010 68%,
+            #0c0c0c 68%,
+            #0c0c0c 100%
+        );
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+#battlefield::after {
+    content: "";
+    position: absolute;
+    left: 5%;
+    right: 5%;
+    bottom: 55px;
+    height: 1px;
+    background: #292929;
+}
+
+.fighter {
+    position: absolute;
+    width: 42%;
+    top: 30px;
+    text-align: center;
+    z-index: 2;
+    transition:
+        transform .35s cubic-bezier(.2,.8,.2,1);
+}
+
+#playerFighter {
+    left: 4%;
+}
+
+#enemyFighter {
+    right: 4%;
+}
+
+.fighter.clashDashPlayer {
+    transform: translateX(115px);
+}
+
+.fighter.clashDashEnemy {
+    transform: translateX(-115px);
+}
+
+.fighter.attackDashPlayer {
+    transform: translateX(250px);
+}
+
+.fighter.attackDashEnemy {
+    transform: translateX(-250px);
+}
+
+.fighter.damageHit {
+    animation: damageHit .28s;
+}
+
+.fighter.guardHit {
+    animation: guardHit .28s;
+}
+
+.fighter.defeated {
+    animation: defeated .8s forwards;
+}
+
+@keyframes damageHit {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-12px); }
+    40% { transform: translateX(10px); }
+    60% { transform: translateX(-7px); }
+}
+
+@keyframes guardHit {
+    0%,100% { transform: translateX(0); }
+    40% { transform: translateX(-8px); }
+    70% { transform: translateX(5px); }
+}
+
+@keyframes defeated {
+    to {
+        opacity: .2;
+        transform: translateY(20px);
+        filter: grayscale(1);
+    }
+}
+
+.name {
+    font-size: 14px;
+    letter-spacing: 2px;
+}
+
+.sprite {
+    height: 90px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 65px;
+}
+
+.hpText {
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+
+.hpBar {
+    width: 90%;
+    height: 10px;
+    margin: auto;
+    border: 1px solid #444;
+    background: #252525;
+}
+
+.hpFill {
+    height: 100%;
+    width: 100%;
+    background: #ddd;
+    transition: width .35s ease;
+}
+
+#enemyHPBar {
+    background: #bbb;
+}
+
+#battleMessage {
+    position: absolute;
+    bottom: 12px;
+    left: 0;
+    right: 0;
+    z-index: 5;
+    text-align: center;
+    color: #aaa;
+    font-size: 11px;
+}
+
+#clashDisplay {
+    position: absolute;
+    left: 50%;
+    top: 29%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    text-align: center;
+    z-index: 5;
+    pointer-events: none;
+}
+
+#clashTitle {
+    font-size: 19px;
+    letter-spacing: 4px;
+    opacity: 0;
+}
+
+#clashNumbers {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 17px;
+    margin-top: 8px;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+#clashNumbers span {
+    min-width: 50px;
+}
+
+#clashVS {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+#coinDisplay {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    min-height: 23px;
+    margin-top: 9px;
+}
+
+.coin {
+    width: 22px;
+    height: 22px;
+    border: 1px solid #aaa;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 9px;
+    background: #202020;
+    animation: coinFlip .25s ease;
+}
+
+.coin.heads {
+    background: #ddd;
+    color: #111;
+}
+
+.coin.tails {
+    color: #aaa;
+}
+
+.coin.broken {
+    opacity: .25;
+    transform: scale(.7);
+}
+
+@keyframes coinFlip {
+    0% {
+        transform: rotateY(0deg) scale(.5);
+    }
+
+    50% {
+        transform: rotateY(180deg) scale(1.2);
+    }
+
+    100% {
+        transform: rotateY(360deg) scale(1);
+    }
+}
+
+.floatNumber {
+    position: absolute;
+    z-index: 20;
+    pointer-events: none;
+    font-size: 24px;
+    font-weight: bold;
+    animation: floatDamage .8s forwards;
+}
+
+@keyframes floatDamage {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 10px) scale(.7);
+    }
+
+    20% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1.15);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50px);
+    }
+}
+
+/* =========================================================
+   COMBAT PANELS
+========================================================= */
+
+#combatPanels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 8px;
+}
+
+.panelTitle {
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin-bottom: 7px;
+}
+
+.skillRow {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+}
+
+.skillCard {
+    min-width: 0;
+    min-height: 68px;
+    padding: 6px 4px;
+    text-align: left;
+    background: var(--panel2);
+}
+
+.skillCard.attack {
+    border-top: 2px solid #aaa;
+}
+
+.skillCard.guard {
+    border-top: 2px solid var(--guard);
+}
+
+.skillCard.targeted {
+    box-shadow: inset 0 -3px 0 #aaa;
+}
+
+.skillCardName {
+    font-size: 9px;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.skillType {
+    color: var(--muted);
+    font-size: 8px;
+    margin-top: 4px;
+}
+
+.skillCoins {
+    font-size: 8px;
+    margin-top: 5px;
+}
+
+/* =========================================================
+   PLAYER CONTROLS
+========================================================= */
+
+#controls {
+    margin-top: 8px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+}
+
+#slotSelection {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.slot {
+    min-height: 52px;
+    font-size: 9px;
+}
+
+.slot.active {
+    background: #292929;
+    border-color: white;
+}
+
+.slot.locked {
+    opacity: .25;
+}
+
+.slot small {
+    color: var(--muted);
+}
+
+#availableSkills {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+
+.availableSkill {
+    padding: 7px;
+    min-height: 60px;
+    text-align: left;
+}
+
+.availableSkillName {
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.availableSkillInfo {
+    color: var(--muted);
+    font-size: 8px;
+    margin-top: 4px;
+}
+
+.skillActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px;
+    margin-top: 4px;
+}
+
+.skillActions button {
+    padding: 4px;
+    font-size: 8px;
+}
+
+#startButton {
+    width: 100%;
+    height: 52px;
+    margin-top: 8px;
+    background: #ddd;
+    color: #080808;
+    border-color: white;
+    letter-spacing: 3px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#startButton:disabled {
+    opacity: .3;
+}
+
+/* =========================================================
+   LOG
+========================================================= */
+
+#log {
+    height: 90px;
+    overflow-y: auto;
+    margin-top: 8px;
+    padding: 6px;
+    background: #070707;
+    border: 1px solid #282828;
+    font-size: 9px;
+    color: #888;
+}
+
+.logLine {
+    margin-bottom: 3px;
+}
+
+/* =========================================================
+   INSPECTOR
+========================================================= */
+
+#inspector {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(0,0,0,.75);
+}
+
+#inspectorBox {
+    width: min(550px, 100%);
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 15px;
+    background: #141414;
+    border: 1px solid #555;
+    border-bottom: 0;
+}
+
+#inspectHeader {
+    display: flex;
+    justify-content: space-between;
+}
+
+#inspectName {
+    margin: 0;
+}
+
+#inspectType {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+#inspectDescription {
+    margin: 12px 0;
+    color: #aaa;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #292929;
+    font-size: 11px;
+}
+
+.stat span {
+    color: #888;
+}
+
+#closeInspector {
+    width: 100%;
+    height: 44px;
+    margin-top: 12px;
+}
+
+/* =========================================================
+   EFFECTS
+========================================================= */
+
+#flash {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0;
+}
+
+#flash.active {
+    animation: flash .18s;
+}
+
+@keyframes flash {
+    0% {
+        opacity: .3;
+        background: white;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+.clashSpark { position:absolute; width:4px; height:4px; background:#eee; border-radius:50%; z-index:8; pointer-events:none; animation:sparkFly .42s ease-out forwards; }
+@keyframes sparkFly { from{opacity:1;transform:translate(0,0) scale(1)} to{opacity:0;transform:translate(var(--sx),var(--sy)) scale(.2)} }
+#app.tilt { animation: battleTilt .16s; }
+@keyframes battleTilt { 0%{transform:rotate(0deg)} 35%{transform:rotate(-.7deg)} 70%{transform:rotate(.7deg)} 100%{transform:rotate(0deg)} }
+
+#app.shake {
+    animation: shake .22s;
+}
+
+@keyframes shake {
+    0%,100% { transform: translate(0); }
+    20% { transform: translate(-4px,2px); }
+    40% { transform: translate(4px,-2px); }
+    60% { transform: translate(-3px,-1px); }
+    80% { transform: translate(3px,2px); }
+}
+
+/* =========================================================
+   RESULT
+========================================================= */
+
+#resultScreen {
+    text-align: center;
+    min-height: 85vh;
+    padding-top: 20vh;
+}
+
+#resultTitle {
+    font-size: 42px;
+    letter-spacing: 6px;
+}
+
+#resultText {
+    color: var(--muted);
+    margin: 15px;
+}
+
+.resultButton {
+    width: min(400px, 90vw);
+    height: 52px;
+    margin: 5px;
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+    #combatPanels {
+        grid-template-columns: 1fr;
+    }
+
+    #enemyPanel {
+        order: 0;
+    }
+
+    #playerPanel {
+        order: 1;
+    }
+
+    #availableSkills {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    #slotSelection {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .fighter.clashDashPlayer {
+        transform: translateX(65px);
+    }
+
+    .fighter.clashDashEnemy {
+        transform: translateX(-65px);
+    }
+
+    .fighter.attackDashPlayer {
+        transform: translateX(130px);
+    }
+
+    .fighter.attackDashEnemy {
+        transform: translateX(-130px);
+    }
+
+    #battlefield {
+        min-height: 285px;
+    }
+
+    .sprite {
+        font-size: 55px;
+        height: 75px;
+    }
+
+    #shopItems {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<style>
+.status-panel{font-size:11px;line-height:1.35;margin-top:5px;opacity:.95}
+.status-chip{display:inline-block;padding:3px 6px;margin:2px;border-radius:7px;background:rgba(255,255,255,.08)}
+.relic-card{padding:10px;border:1px solid rgba(255,255,255,.18);border-radius:10px;margin-top:7px}
+.dungeon-node{min-width:104px;min-height:88px;padding:12px;touch-action:manipulation}
+.dungeon-node.locked{filter:brightness(.42) saturate(.3);box-shadow:none}
+.dungeon-node.available{filter:none}
+
+
+.relicPopup[hidden]{display:none}
+.relicPopup{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:20px}
+.relicPopupBox{width:min(480px,92vw);padding:28px;text-align:center;background:#111;border:1px solid #555;border-radius:12px;box-shadow:0 20px 80px #000}
+.relicPopupTitle{font-size:18px;letter-spacing:3px;font-weight:bold}
+.relicPopupIcon{font-size:52px;margin:16px}
+.relicPopupText{font-size:13px;line-height:1.6;color:#bbb;min-height:45px;margin-bottom:20px}
+.statusText{font-size:11px;min-height:18px;margin-top:3px;color:#ddd}
+.statusTag{display:inline-block;margin:1px 3px;padding:2px 5px;border:1px solid #444;border-radius:4px;background:#151515}
+</style>
+</head>
+
+<body>
+
+<div id="flash"></div>
+
+<audio id="musicExploration" loop preload="auto" src="audio/exploration.wav"></audio>
+<audio id="musicBattle" loop preload="auto" src="audio/battle_regular.wav"></audio>
+<audio id="musicBoss" loop preload="auto" src="audio/battle_boss.wav"></audio>
+<audio id="musicNursefather" loop preload="auto" src="audio/battle_nursefather.wav"></audio>
+
+<div id="relicPopup" class="relicPopup" hidden>
+  <div class="relicPopupBox">
+    <div class="relicPopupTitle" id="relicPopupTitle">BOSS DEFEATED</div>
+    <div class="relicPopupIcon" id="relicPopupIcon">◇</div>
+    <div class="relicPopupText" id="relicPopupText"></div>
+    <button id="relicPopupContinue">CONTINUE</button>
+  </div>
+</div>
+
+<div id="enemyBuffPopup" class="relicPopup" hidden>
+  <div class="relicPopupBox">
+    <div class="relicPopupTitle">FLOOR ENEMY BUFF</div>
+    <div class="relicPopupIcon">⚠</div>
+    <div class="relicPopupText" id="enemyBuffPopupText"></div>
+    <button id="enemyBuffPopupContinue">CONTINUE</button>
+  </div>
+</div>
+
+<div id="app">
+
+<!-- =====================================================
+     MAIN MENU
+===================================================== -->
+
+<section id="menuScreen" class="screen active">
+
+    <div>
+
+        <div class="logo">
+            COIN CLASH
+        </div>
+
+        <div class="subtitle">
+            A DUNGEON OF CHANCE
+        </div>
+
+        <button
+            id="startRunButton"
+            class="menuButton">
+            START RUN
+        </button>
+
+        <button
+            id="howButton"
+            class="menuButton">
+            HOW TO PLAY
+        </button>
+
+        <div class="menuInfo">
+            PROTOTYPE BUILD
+        </div>
+
+    </div>
+
+</section>
+
+<!-- =====================================================
+     DUNGEON
+===================================================== -->
+
+<section id="dungeonScreen" class="screen">
+
+    <div id="topbar">
+
+        <div class="topStat">
+            FLOOR
+            <strong id="floorDisplay">1</strong>
+        </div>
+
+        <div class="topStat">
+            COST
+            <strong id="costDisplay">0</strong>
+        </div>
+
+        <div class="topStat">
+            SLOTS
+            <strong id="slotDisplay">1</strong>
+        </div>
+
+    </div>
+
+    <div class="screenTitle">
+        FLOOR <span id="floorTitle">1</span>
+    </div>
+
+    <div class="screenSub">
+        CHOOSE YOUR PATH
+    </div>
+
+    <div id="map"></div>
+
+    <div id="mapFooter">
+        Choose a node to continue.
+    </div>
+
+</section>
+
+<!-- =====================================================
+     SHOP
+===================================================== -->
+
+<section id="shopScreen" class="screen">
+
+    <div class="screenTitle">
+        SHOP
+    </div>
+
+    <div class="screenSub">
+        IMPROVE YOUR WEAPON BEFORE DESCENDING.
+    </div>
+
+    <div class="shopHeader">
+
+        COST
+
+        <div
+            id="shopCost"
+            class="cost">
+            0
+        </div>
+
+    </div>
+
+    <div id="shopItems"></div>
+
+    <button id="leaveShop">
+        CONTINUE
+    </button>
+
+</section>
+
+<!-- =====================================================
+     FLOOR MUTATION CHOICE
+===================================================== -->
+<section id="floorChoiceScreen" class="screen">
+    <div class="screenTitle">FLOOR MUTATION</div>
+    <div class="screenSub">TAKE A SMALL ADVANTAGE. ACCEPT A SMALLER ADVANTAGE FOR YOUR ENEMIES.</div>
+    <div id="floorChoices"></div>
+</section>
+
+<!-- =====================================================
+     COMBAT
+===================================================== -->
+
+<section id="combatScreen" class="screen">
+
+    <div id="topbar">
+
+        <div class="topStat">
+            TURN
+            <strong id="turnDisplay">1</strong>
+        </div>
+
+        <div class="topStat">
+            FLOOR
+            <strong id="combatFloor">1</strong>
+        </div>
+
+        <div class="topStat">
+            COST
+            <strong id="combatCost">0</strong>
+        </div>
+
+    </div>
+
+    <div id="battlefield">
+
+        <div id="playerFighter" class="fighter">
+
+            <div
+                id="playerName"
+                class="name">
+                PLAYER
+            </div>
+
+            <div class="sprite">
+                🧍
+            </div>
+
+            <div class="hpText">
+                <span id="playerHP">100</span>
+                /
+                <span id="playerMaxHP">100</span>
+                HP
+            </div>
+
+            <div class="hpBar">
+                <div
+                    id="playerHPBar"
+                    class="hpFill">
+                </div>
+            </div>
+            <div id="playerSanity" class="sanityText">(SP: 0)</div>
+            <div id="playerStatus" class="statusText"></div>
+
+        </div>
+
+        <div id="enemyFighter" class="fighter">
+
+            <div
+                id="enemyName"
+                class="name">
+                ENEMY
+            </div>
+
+            <div class="sprite">
+                👹
+            </div>
+
+            <div class="hpText">
+                <span id="enemyHP">100</span>
+                /
+                <span id="enemyMaxHP">100</span>
+                HP
+            </div>
+
+            <div class="hpBar">
+                <div
+                    id="enemyHPBar"
+                    class="hpFill">
+                </div>
+            </div>
+            <div id="enemySanity" class="sanityText">(SP: 0)</div>
+            <div id="enemyStatus" class="statusText"></div>
+
+        </div>
+
+        <div id="clashDisplay">
+
+            <div id="clashTitle">
+                CLASH
+            </div>
+
+            <div id="clashNumbers">
+
+                <span id="playerRoll">
+                    -
+                </span>
+
+                <span id="clashVS">
+                    VS
+                </span>
+
+                <span id="enemyRoll">
+                    -
+                </span>
+
+            </div>
+
+            <div id="coinDisplay"></div>
+
+        </div>
+
+        <div id="battleMessage">
+            Choose your skills.
+        </div>
+
+    </div>
+
+    <!-- ENEMY FIRST -->
+    <div id="combatPanels">
+
+        <div id="enemyPanel" class="panel">
+
+            <div class="panelTitle">
+                CURRENT ENEMY ATTACKS — TAP TO INSPECT
+            </div>
+            <div id="enemyModifiers" class="enemyModifierList"></div>
+
+            <div
+                id="enemySkills"
+                class="skillRow">
+            </div>
+
+        </div>
+
+        <div id="playerPanel" class="panel">
+
+            <div class="panelTitle">
+                PLAYER AVAILABLE SKILLS
+            </div>
+
+            <div
+                id="playerSkills"
+                class="skillRow">
+            </div>
+
+        </div>
+
+    </div>
+
+    <div id="controls">
+
+        <div class="panelTitle">
+            CHOOSE YOUR SKILL CHAIN
+        </div>
+
+        <div id="slotSelection"></div>
+
+        <div id="availableSkills"></div>
+
+        <button id="startButton">
+            START
+        </button>
+
+    </div>
+
+    <div id="log"></div>
+
+</section>
+
+<!-- =====================================================
+     RESULT
+===================================================== -->
+
+<section id="resultScreen" class="screen">
+
+    <div id="resultTitle">
+        VICTORY
+    </div>
+
+    <div id="resultText"></div>
+
+    <button
+        id="resultContinue"
+        class="resultButton">
+        CONTINUE
+    </button>
+
+    <button
+        id="resultMenu"
+        class="resultButton">
+        MAIN MENU
+    </button>
+
+</section>
+
+</div>
+
+<!-- =====================================================
+     INSPECTOR
+===================================================== -->
+
+<div id="inspector">
+
+    <div id="inspectorBox">
+
+        <div id="inspectHeader">
+
+            <div>
+
+                <h2 id="inspectName">
+                    ABILITY
+                </h2>
+
+                <div id="inspectType"></div>
+
+            </div>
+
+        </div>
+
+        <div id="inspectDescription"></div>
+
+        <div class="stat">
+            <span>EFFECT</span>
+            <strong id="inspectEffect"></strong>
+        </div>
+
+        <div class="stat">
+            <span>CLASH POWER</span>
+            <strong id="inspectClash"></strong>
+        </div>
+
+        <div class="stat">
+            <span>COIN POWER</span>
+            <strong id="inspectCoinPower"></strong>
+        </div>
+
+        <div class="stat">
+            <span>MINIMUM COIN ADDITIVE</span>
+            <strong id="inspectMin"></strong>
+        </div>
+
+        <div class="stat">
+            <span>MAXIMUM COIN ADDITIVE</span>
+            <strong id="inspectMax"></strong>
+        </div>
+
+        <div class="stat">
+            <span>ATTACK POWER</span>
+            <strong id="inspectAttack"></strong>
+        </div>
+
+        <button id="closeInspector">
+            CLOSE
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+function getEffectiveSkillStats(skill, owner){
+    const b = skill.baseStats || skill;
+    const s = {
+        clashPower:Number(skill.clashPower ?? b.clashPower ?? 0),
+        coinPower:Number(skill.coinPower ?? b.coinPower ?? 0),
+        minCoinAdditive:Number(skill.minCoinAdditive ?? skill.minAdditive ?? b.minCoinAdditive ?? b.minAdditive ?? b.minCoin ?? 0),
+        maxCoinAdditive:Number(skill.maxCoinAdditive ?? skill.maxAdditive ?? b.maxCoinAdditive ?? b.maxAdditive ?? b.maxCoin ?? 0),
+        attackPower:Number(skill.attackPower ?? b.attackPower ?? 0)
+    };
+    const buffs = owner?.skillBuffs || owner?.combatBuffs || {};
+    s.clashPower += Number(buffs.clashPower||0);
+    s.coinPower += Number(buffs.coinPower||0);
+    s.minCoinAdditive += Number(buffs.minCoinAdditive||0);
+    s.maxCoinAdditive += Number(buffs.maxCoinAdditive||0);
+    s.attackPower += Number(buffs.attackPower||0);
+    if(owner === run.currentEnemy){
+        const eb=run.enemyBuffs||{};
+        s.clashPower += Number(eb.clashPower||0);
+        s.coinPower += Number(eb.coinPowerAdd||0);
+        s.minCoinAdditive += Number(eb.minAdditive||0);
+        s.maxCoinAdditive += Number(eb.maxAdditive||0);
+        s.coinPower += Number(owner.coinPowerModifier||0);
+    } else if(owner === player){
+        const pb=run.playerBuffs||{};
+        s.coinPower += Number(pb.coinPowerAdd||0);
+        s.attackPower *= Number(pb.damageMult||1);
+    }
+    const sp = Number(owner?.sp ?? owner?.sanity ?? 0);
+    s.coinPower += Math.max(-0.35, Math.min(0.35, sp/50*0.35));
+    s.coinPower = Math.min(0.75, Math.max(0, s.coinPower));
+    s.clashPower = Math.max(0, Math.floor(s.clashPower));
+    s.minCoinAdditive = Math.floor(s.minCoinAdditive);
+    s.maxCoinAdditive = Math.floor(s.maxCoinAdditive);
+    s.attackPower = intDamage(s.attackPower);
+    return s;
+}
+function getEffectiveSkill(skill, owner){
+    const s=getEffectiveSkillStats(skill, owner);
+    return {...skill, clashPower:s.clashPower, coinPower:s.coinPower, minAdditive:s.minCoinAdditive, maxAdditive:s.maxCoinAdditive, attackPower:s.attackPower};
+}
+
+function getSkillEffectText(skill){
+    if(!skill) return "None";
+    const explicit = skill.effect || skill.statusEffect || skill.inflictsEffect;
+    if (explicit) {
+        if (typeof explicit === "string") return explicit;
+        const list = explicit.effects || (Array.isArray(explicit) ? explicit : [explicit]);
+        return list.map(e => `${STATUS_DEFS[e.type]?.name || e.name || e.type || "Effect"} ${e.count ?? skill.effectCount ?? 0}:${e.potency ?? skill.effectPotency ?? 0}`).join("; ");
+    }
+    const mapped = ABILITY_STATUS[skill.id] || ABILITY_STATUS[skill.baseId];
+    if (!mapped) return "None";
+    const list = mapped.effects || [mapped];
+    return list.map(e => `${STATUS_DEFS[e.type]?.name || e.type || "Effect"} +${e.count ?? 0} Count / +${e.potency ?? 0} Potency`).join("; ");
+}
+function formatSkillDetails(skill, owner){
+    const s=getEffectiveSkillStats(skill,owner);
+    return `Clash Power: ${s.clashPower} • Coin Power: ${Math.round(s.coinPower*100)}% • Min Coin Additive: ${s.minCoinAdditive} • Max Coin Additive: ${s.maxCoinAdditive} • Attack Power: ${intDamage(s.attackPower)} • Effect: ${getSkillEffectText(skill)}`;
+}
+
+
+function intHP(v){ return Math.max(0, Math.round(Number(v)||0)); }
+function intDamage(v){ return Math.max(0, Math.round(Number(v)||0)); }
+function displayHP(v){ return String(intHP(v)); }
+function displayDamage(v){ return String(intDamage(v)); }
+
+/* ===== STATUS / RELIC / DECK EXTENSION ===== */
+const STATUS_DEFS = {
+  clashPowerUp: {name:"Clash Power Up", desc:"For its Count, add Potency coins to every ability."},
+  bleed: {name:"Bleed", desc:"Incoming damage is multiplied by 1 + (Potency / 10)."},
+  burn: {name:"Burn", desc:"At turn start, take fixed damage equal to Potency × Count."},
+  draining: {name:"Draining", desc:"At turn start, lose SP equal to Potency × Count."},
+};
+
+const ABILITY_STATUS = {
+  slash:      {type:"bleed", count:1, potency:1},
+  heavySlash: {type:"bleed", count:2, potency:1},
+  gamble:     {type:"burn", count:1, potency:2},
+  bite:       {type:"bleed", count:1, potency:1},
+  guard:      {type:"burn", count:1, potency:1},
+  ironGuard:  {type:"burn", count:2, potency:1},
+  counter:    {type:"draining", count:1, potency:1},
+  execution:  {type:"draining", count:2, potency:1},
+  bloodSlash: {type:"bleed", count:2, potency:2},
+  lash:       {type:"draining", count:2, potency:2},
+  entwine:    {type:"draining", count:3, potency:2},
+  sever:      {type:"draining", count:3, potency:3},
+  furiosoReplica:{type:"draining", count:4, potency:4}
+};
+
+const RELICS = [
+  {id:"crimsonWard", name:"Crimson Ward", desc:"Take 20% less damage from Bleed."},
+  {id:"thornedCrown", name:"Thorned Crown", desc:"Bleed you inflict gains +1 Potency."},
+  {id:"cinderHeart", name:"Cinder Heart", desc:"Take 20% less damage from Burn."},
+  {id:"emberTongue", name:"Ember Tongue", desc:"Burn you inflict gains +1 Potency."},
+  {id:"drainVeil", name:"Drain Veil", desc:"Take 20% less SP loss from Draining."},
+  {id:"clashFortune", name:"Clash Fortune", desc:"If you lose a clash, gain Clash Power Up 2:1 for the next turn. This adds 2 coins to every ability you use that turn."}
+];
+
+function ensureStatusState(entity){
+  if(!entity.statuses) entity.statuses = {
+    clashPowerUp:{count: 0,potency:0,appliedThisTurn:false},
+    bleed:{count: 0,potency:0,appliedThisTurn:false},
+    burn:{count: 0,potency:0,appliedThisTurn:false},
+    draining:{count: 0,potency:0,appliedThisTurn:false}
+  };
+  return entity.statuses;
+}
+
+function addStatusEffect(entity,type,count,potency){
+  const s=ensureStatusState(entity);
+  const r=window.run && RELICS.find(x=>x.id===window.run.equippedRelicId);
+  if(r && entity===window.player){
+    if(r.id==="thornedCrown" && type==="bleed") potency++;
+    if(r.id==="emberTongue" && type==="burn") potency++;
+    if(r.id==="deepWell" && type==="draining") count++;
+  }
+  s[type].count += Math.max(0,count);
+  s[type].potency = Math.max(s[type].potency,potency);
+  s[type].appliedThisTurn = true;
+}
+
+function processStatusStart(entity){
+  const s=ensureStatusState(entity);
+  let burn=s.burn.potency*s.burn.count;
+  let drain=s.draining.potency*s.draining.count;
+  const r=window.run && RELICS.find(x=>x.id===window.run.equippedRelicId);
+  if(r && entity===window.player){
+    if(r.id==="cinderHeart") burn*=.8;
+    if(r.id==="drainVeil") drain*=.8;
+  }
+  entity.hp=Math.max(0,(entity.hp||0)-burn);
+  if (drain > 0) changeSanity(entity, -Math.round(drain), "Draining");
+}
+
+function tickStatusEffects(entity){
+  const s=ensureStatusState(entity);
+  for(const k of Object.keys(s)){
+    s[k].count--;
+    if(s[k].count<=0) s[k]={count: 0,potency:0,appliedThisTurn:false};
+  }
+}
+
+function getBleedDamageMultiplier(entity){
+  const s=ensureStatusState(entity);
+  let m=1+s.bleed.potency/10;
+  const r=window.run && RELICS.find(x=>x.id===window.run.equippedRelicId);
+  if(r && entity===window.player && r.id==="crimsonWard") m*=.8;
+  return m;
+}
+
+function statusText(entity){
+  const s=ensureStatusState(entity);
+  return Object.entries(s)
+    .filter(([,v]) => v.count > 0)
+    .map(([k,v]) => `[${STATUS_DEFS[k].name} ${v.count}:${v.potency}]`)
+    .join(" ");
+}
+
+function abilityEffectText(id){
+  const x=ABILITY_STATUS[id];
+  if(!x) return "No status effect";
+  const list=x.effects||[x];
+  return list.map(e=>`${STATUS_DEFS[e.type].name}: +${e.count} Count / +${e.potency} Potency`).join("; ");
+}
+
+function inspectDungeonNodeData(node){
+  const e=node?.enemy||node?.enemyData;
+  return {
+    name:e?.name||node?.enemyName||"Unknown Enemy",
+    cost:node?.reward??node?.cost??"?",
+    modifiers:e?.modifiers||node?.modifiers||[],
+    inspectable:true
+  };
+}
+
+window.STATUS_DEFS=STATUS_DEFS;
+window.ABILITY_STATUS=ABILITY_STATUS;
+window.RELICS=RELICS;
+window.addStatusEffect=addStatusEffect;
+window.processStatusStart=processStatusStart;
+window.tickStatusEffects=tickStatusEffects;
+window.getBleedDamageMultiplier=getBleedDamageMultiplier;
+window.statusText=statusText;
+window.abilityEffectText=abilityEffectText;
+window.inspectDungeonNodeData=inspectDungeonNodeData;
+
+function refreshAllSkillDisplays(){
+    if(typeof renderPlayerSkills==="function") renderPlayerSkills();
+    if(typeof renderShop==="function") renderShop();
+    if(typeof updateCombatUI==="function") updateCombatUI();
+}
+
+</script>
+<script>
+/* =========================================================
+   ABILITIES
+========================================================= */
+
+const abilities = {
+
+    slash: {
+        name: "Slash",
+        type: "attack",
+        clashPower: 3,
+        coinPower: .65,
+        minAdditive: 1,
+        maxAdditive: 3,
+        attackPower: 7,
+        description:
+            "A reliable, lower-risk attack. Its three coins make it the safest tool for sustained clashes."
+    },
+
+    heavySlash: {
+        name: "Heavy Slash",
+        type: "attack",
+        clashPower: 2,
+        coinPower: .45,
+        minAdditive: 0,
+        maxAdditive: 6,
+        attackPower: 10,
+        description:
+            "A high-risk, high-reward attack with only two coins. It can be used repeatedly, but losing a clash is costly."
+    },
+
+    gamble: {
+        name: "Gamble",
+        type: "attack",
+        clashPower: 5,
+        coinPower: .45,
+        minAdditive: 0,
+        maxAdditive: 4,
+        attackPower: 5,
+        description:
+            "A volatile attack with many coins and unreliable coin power."
+    },
+
+    bite: {
+        name: "Bite",
+        type: "attack",
+        clashPower: 2,
+        coinPower: .65,
+        minAdditive: 1,
+        maxAdditive: 3,
+        attackPower: 5,
+        description:
+            "A quick, low-damage attack with modest power."
+    },
+
+    guard: {
+        name: "Guard",
+        type: "guard",
+        clashPower: 3,
+        coinPower: .70,
+        minAdditive: 1,
+        maxAdditive: 3,
+        attackPower: 0,
+        description:
+            "Blocks incoming attacks. If the guard roll exceeds the incoming roll, no damage is taken."
+    },
+
+    ironGuard: {
+        name: "Iron Guard",
+        type: "guard",
+        clashPower: 4,
+        coinPower: .65,
+        minAdditive: 1,
+        maxAdditive: 4,
+        attackPower: 0,
+        description:
+            "A durable defensive skill with four coins."
+    },
+
+    counter: {
+        name: "Counter",
+        type: "attack",
+        clashPower: 3,
+        coinPower: .60,
+        minAdditive: 2,
+        maxAdditive: 4,
+        attackPower: 8,
+        description:
+            "A dangerous attack designed to punish opponents."
+    },
+
+    execution: {
+        name: "Execution",
+        type: "attack",
+        clashPower: 3,
+        coinPower: .75,
+        minAdditive: 2,
+        maxAdditive: 5,
+        attackPower: 12,
+        description:
+            "A devastating attack that is expensive to rely on."
+    },
+
+    bloodSlash: {
+        name: "Blood Slash",
+        type: "attack",
+        clashPower: 4,
+        coinPower: .55,
+        minAdditive: 1,
+        maxAdditive: 5,
+        attackPower: 10,
+        description:
+            "A brutal attack with several opportunities to gain power."
+    },
+
+    lash: {
+        shopAvailable: false,
+        name: "Lash",
+        type: "attack",
+        clashPower: 2,
+        coinPower: .75,
+        minAdditive: 3,
+        maxAdditive: 6,
+        attackPower: 28,
+        description: "Enwrap 330 times in long strands of frozen blood"
+    },
+
+    entwine: {
+        shopAvailable: false,
+        name: "Entwine",
+        type: "attack",
+        clashPower: 3,
+        coinPower: .75,
+        minAdditive: 4,
+        maxAdditive: 6,
+        attackPower: 31,
+        description: "Revel in soundless applause, inhale in voiceless sorrows."
+    },
+
+    sever: {
+        shopAvailable: false,
+        name: "Sever",
+        type: "attack",
+        clashPower: 4,
+        coinPower: .75,
+        minAdditive: 5,
+        maxAdditive: 7,
+        attackPower: 34,
+        description: "Raise and laugh the blade, cry the waterfall like the scent of fallen leaves."
+    },
+
+    furiosoReplica: {
+        shopAvailable: false,
+        name: "Furioso-Replica",
+        type: "attack",
+        clashPower: 9,
+        coinPower: .75,
+        minAdditive: 2,
+        maxAdditive: 8,
+        attackPower: 68,
+        description: "Grace of God"
+    }
+};
+
+/* =========================================================
+   WEAPONS
+========================================================= */
+
+const weapons = {
+
+    ironSword: {
+        name: "Iron Sword",
+        level: 1,
+        abilities: ["hollowCut","crushingCut","hollowGuard"]
+    },
+
+    gamblerBlade: {
+        name: "Gambler Blade",
+        level: 1,
+        abilities: [
+            "gamble",
+            "slash",
+            "guard"
+        ]
+    }
+};
+
+const enemyAbilities = {
+  ratBite: {...abilities.bite, id:"ratBite", name:"Gnaw", description:"The rat snaps at its target."},
+  ratGuard: {...abilities.guard, id:"ratGuard", name:"Hide", description:"The rat curls up defensively."},
+  soldierSlash: {...abilities.slash, id:"soldierSlash", name:"Hollow Cut"},
+  soldierHeavy: {...abilities.heavySlash, id:"soldierHeavy", name:"Crushing Cut"},
+  soldierGuard: {...abilities.guard, id:"soldierGuard", name:"Hollow Guard"},
+  knightHeavy: {...abilities.heavySlash, id:"knightHeavy", name:"Executioner's Swing"},
+  knightSlash: {...abilities.slash, id:"knightSlash", name:"Knight's Cut"},
+  knightGuard: {...abilities.ironGuard, id:"knightGuard", name:"Iron Bulwark"},
+  kingCounter: {...abilities.counter, id:"kingCounter", name:"Royal Counter"},
+  kingExecution: {...abilities.execution, id:"kingExecution", name:"King's Sentence"},
+  lash: {...abilities.lash, id:"lash"},
+  entwine: {...abilities.entwine, id:"entwine"},
+  sever: {...abilities.sever, id:"sever"},
+  furiosoReplica: {...abilities.furiosoReplica, id:"furiosoReplica"},
+  ratGnaw: {...abilities.bite, id:"ratGnaw", name:"Gnaw"},
+  ratHide: {...abilities.guard, id:"ratHide", name:"Hide"},
+  hollowCut: {...abilities.slash, id:"hollowCut", name:"Hollow Cut"},
+  crushingCut: {...abilities.heavySlash, id:"crushingCut", name:"Crushing Cut"},
+  hollowGuard: {...abilities.guard, id:"hollowGuard", name:"Hollow Guard"},
+  executionerSwing: {...abilities.heavySlash, id:"executionerSwing", name:"Executioner's Swing"},
+  knightsCut: {...abilities.slash, id:"knightsCut", name:"Knight's Cut"},
+  ironBulwark: {...abilities.ironGuard, id:"ironBulwark", name:"Iron Bulwark"},
+  royalCounter: {...abilities.counter, id:"royalCounter", name:"Royal Counter"},
+  kingsSentence: {...abilities.execution, id:"kingsSentence", name:"King's Sentence"},
+  bloodCleave: {...abilities.bloodSlash, id:"bloodCleave", name:"Blood Cleave"}
+};
+
+Object.assign(ABILITY_STATUS, {
+  ratBite: {type:"bleed", count:1, potency:1},
+  ratGuard: {type:"burn", count:1, potency:1},
+  soldierSlash: {type:"bleed", count:1, potency:1},
+  soldierHeavy: {type:"bleed", count:2, potency:1},
+  soldierGuard: {type:"burn", count:1, potency:1},
+  knightHeavy: {type:"bleed", count:2, potency:2},
+  knightSlash: {type:"bleed", count:1, potency:2},
+  knightGuard: {type:"burn", count:1, potency:2},
+  kingCounter: {type:"draining", count:1, potency:2},
+  kingExecution: {type:"draining", count:2, potency:2},
+  lash: {type:"draining", count:2, potency:2},
+  entwine: {type:"draining", count:3, potency:2},
+  sever: {type:"draining", count:3, potency:3},
+  furiosoReplica: {effects:[{type:"bleed",count:4,potency:5},{type:"burn",count:4,potency:5},{type:"draining",count:4,potency:5}]},
+  ratGnaw:{type:"bleed",count:1,potency:1}, ratHide:{type:"burn",count:1,potency:1},
+  hollowCut:{type:"bleed",count:1,potency:1}, crushingCut:{type:"bleed",count:2,potency:1}, hollowGuard:{type:"burn",count:1,potency:1},
+  executionerSwing:{type:"bleed",count:2,potency:2}, knightsCut:{type:"bleed",count:1,potency:2}, ironBulwark:{type:"burn",count:2,potency:1},
+  royalCounter:{type:"draining",count:1,potency:2}, kingsSentence:{type:"draining",count:2,potency:2}, bloodCleave:{type:"bleed",count:2,potency:2}
+});
+
+/* =========================================================
+   ENEMY DEFINITIONS
+========================================================= */
+
+const enemyTypes = {
+
+    caveRat: {
+        name: "Cave Rat",
+        maxHP: 70,
+        reward: 20,
+        slots: 1,
+
+        abilities: ["ratGnaw","ratHide"]
+    },
+
+    hollowSoldier: {
+        name: "Hollow Soldier",
+        maxHP: 165,
+        reward: 45,
+        slots: 3,
+
+        abilities: ["hollowCut","crushingCut","hollowGuard"]
+    },
+
+    ironKnight: {
+        name: "Iron Knight",
+        maxHP: 240,
+        reward: 70,
+        slots: 3,
+
+        abilities: ["executionerSwing","knightsCut","ironBulwark","hollowGuard"]
+    },
+
+    hollowKing: {
+        name: "Hollow King",
+        maxHP: 900,
+        reward: 300,
+        slots: 5,
+        abilities: ["hollowCut","crushingCut","hollowGuard","ironBulwark","royalCounter","bloodCleave","kingsSentence"]
+    },
+    caveWarden: {
+        name: "Cave Warden",
+        maxHP: 125,
+        reward: 85,
+        slots: 1,
+        abilities: ["ratBite","soldierSlash","ratGuard"]
+    },
+    ironWarden: {
+        name: "Iron Warden",
+        maxHP: 360,
+        reward: 210,
+        slots: 3,
+        abilities: ["knightHeavy","knightSlash","knightGuard","soldierGuard","kingCounter"]
+    },
+    hollowKnight: {
+        name: "Hollow Knight", maxHP: 260, reward: 95, slots: 3,
+        abilities: ["knightHeavy","knightSlash","knightGuard","soldierGuard","kingCounter"]
+    },
+    nursefather: {
+        name: "The Nursefather",
+        maxHP: 4375,
+        reward: 2200,
+        slots: 6,
+        abilities: ["lash","entwine","sever","knightGuard"],
+        nursefather: true
+    },
+};
+
+/* =========================================================
+   MODIFIERS
+========================================================= */
+
+const modifiers = {
+    sturdy: { name:"Sturdy", description:"+15% max HP, -5% coin power.", hpMult:1.15, coinPowerAdd:-.05 },
+    glassJaw: { name:"Glass Jaw", description:"-12% max HP, +7% coin power.", hpMult:.88, coinPowerAdd:.07 },
+    disciplined: { name:"Disciplined", description:"+8% coin power, -8% reward.", hpMult:1, coinPowerAdd:.08, rewardMult:.92 },
+    reckless: { name:"Reckless", description:"+12% damage dealt, -8% max HP.", hpMult:.92, damageMult:1.12 },
+    ironWill: { name:"Iron Will", description:"+10% max HP and resists stagger threshold.", hpMult:1.10, coinPowerAdd:-.02, ironWill:true }
+};
+
+function generateModifiers(difficulty="normal", isChallenge=false) {
+    if (difficulty === "easy") return Math.random()<.18 ? [modifiers.glassJaw] : [];
+    const chance = isChallenge ? .85 : difficulty === "hard" ? .65 : .28;
+    if (Math.random() > chance) return [];
+    const pool = Object.values(modifiers);
+    const first = randomItem(pool);
+    if (isChallenge && Math.random()<.22) {
+        return [first, randomItem(pool.filter(m=>m!==first))];
+    }
+    return [first];
+}
+
+/* =========================================================
+   RUN STATE
+========================================================= */
+
+const run = {
+  ownedSkills:["slash","heavySlash","guard"],
+  equippedSkills:["slash","heavySlash","guard"],
+  ownedRelics:[],
+  equippedRelicId:null,
+
+
+    active: false,
+
+    floor: 1,
+
+    cost: 0,
+
+    skillSlots: 1,
+
+    weapon: weapons.ironSword,
+
+    weaponLevel: 1,
+
+    currentEnemy: null,
+
+    currentEnemyDefinition: null,
+
+    currentNode: null,
+
+    nodes: [],
+    mapVersion: 0,
+    shopPriceBumps: {},
+    floorBuff: null,
+    enemyBuff: null,
+    playerBuffs: {coinPowerAdd:0, damageMult:1, maxHPMult:1, maxHPFlat:0},
+    enemyBuffs: {hpMult:1, coinPowerAdd:0, damageMult:1, minAdditive:0, maxAdditive:0, clashPower:0, startingSP:0}
+};
+
+const player = {
+
+    maxHP: 140,
+
+    hp: 140,
+
+    skills: [],
+
+    plan: [],
+
+    selectedSlot: 0,
+    staggered: false,
+    sanity: 0,
+    skillUses: {}
+};
+
+let combatRunning = false;
+let turn = 1;
+window.run = run;
+window.player = player;
+
+/* =========================================================
+   DOM
+========================================================= */
+
+const app =
+    document.getElementById("app");
+
+const menuScreen =
+    document.getElementById("menuScreen");
+
+const dungeonScreen =
+    document.getElementById("dungeonScreen");
+
+const shopScreen =
+    document.getElementById("shopScreen");
+
+const floorChoiceScreen =
+    document.getElementById("floorChoiceScreen");
+
+const combatScreen =
+    document.getElementById("combatScreen");
+
+const resultScreen =
+    document.getElementById("resultScreen");
+
+const battlefield =
+    document.getElementById("battlefield");
+
+const playerFighter =
+    document.getElementById("playerFighter");
+
+const enemyFighter =
+    document.getElementById("enemyFighter");
+
+const enemySkillsElement =
+    document.getElementById("enemySkills");
+
+const playerSkillsElement =
+    document.getElementById("playerSkills");
+
+const availableSkillsElement =
+    document.getElementById("availableSkills");
+
+const slotSelection =
+    document.getElementById("slotSelection");
+
+const clashTitle =
+    document.getElementById("clashTitle");
+
+const playerRollElement =
+    document.getElementById("playerRoll");
+
+const enemyRollElement =
+    document.getElementById("enemyRoll");
+
+const coinDisplay =
+    document.getElementById("coinDisplay");
+
+const battleMessage =
+    document.getElementById("battleMessage");
+
+const logElement =
+    document.getElementById("log");
+
+/* =========================================================
+   BASIC UTILITIES
+========================================================= */
+
+function sleep(ms) {
+
+    return new Promise(
+        resolve => setTimeout(resolve, ms)
+    );
+}
+
+function randomChance(chance) {
+
+    return Math.random() < chance;
+}
+
+function randomItem(array) {
+
+    return array[
+        Math.floor(
+            Math.random() * array.length
+        )
+    ];
+}
+
+function shuffle(array) {
+
+    const copy = [...array];
+
+    for (
+        let i = copy.length - 1;
+        i > 0;
+        i--
+    ) {
+
+        const j =
+            Math.floor(
+                Math.random() * (i + 1)
+            );
+
+        [
+            copy[i],
+            copy[j]
+        ] = [
+            copy[j],
+            copy[i]
+        ];
+    }
+
+    return copy;
+}
+
+function log(message) {
+
+    const line =
+        document.createElement("div");
+
+    line.className =
+        "logLine";
+
+    line.textContent =
+        message;
+
+    logElement.appendChild(line);
+
+    logElement.scrollTop =
+        logElement.scrollHeight;
+}
+
+/* =========================================================
+   SCREEN CONTROL
+========================================================= */
+
+function showScreen(screen) {
+
+    document
+        .querySelectorAll(".screen")
+        .forEach(
+            element => {
+                element.classList.remove("active");
+            }
+        );
+
+    screen.classList.add("active");
+}
+
+const musicPlayers={
+  exploration:document.getElementById("musicExploration"),
+  battle:document.getElementById("musicBattle"),
+  boss:document.getElementById("musicBoss"),
+  nursefather:document.getElementById("musicNursefather")
+};
+let activeMusicKind=null;
+let musicFadeTimer=null;
+function fadeAudio(a,target,duration=450){
+  if(!a) return Promise.resolve();
+  const start=a.volume; const steps=18; const step=duration/steps;
+  return new Promise(resolve=>{ let i=0; clearInterval(a._fade); a._fade=setInterval(()=>{ i++; a.volume=Math.max(0,Math.min(.45,start+(target-start)*(i/steps))); if(i>=steps){clearInterval(a._fade);resolve();}},step); });
+}
+async function playMusic(kind){
+  const next=musicPlayers[kind];
+  if(!next) return;
+  const current=activeMusicKind?musicPlayers[activeMusicKind]:null;
+  if(activeMusicKind===kind){
+    // Combat tracks are encounter tracks: re-entering a battle always
+    // restarts them. Exploration is the only resumable track.
+    if(kind !== "exploration") next.currentTime = 0;
+    if(next.paused) next.play().catch(()=>{});
+    return;
+  }
+  if(current){ await fadeAudio(current,0,300); current.pause(); }
+  activeMusicKind=kind;
+  // Exploration is intentionally resumable. Combat/boss tracks always
+  // begin from the start whenever a new battle is entered.
+  if(kind !== "exploration") next.currentTime = 0;
+  next.volume=0;
+  next.play().catch(()=>{});
+  await fadeAudio(next,.45,450);
+}
+function stopMusic(){Object.values(musicPlayers).forEach(a=>{if(a){a.pause();}});activeMusicKind=null;}
+document.addEventListener("pointerdown",()=>{if(run.active && menuScreen.classList.contains("active")) return;}, {once:true});
+
+/* =========================================================
+   RUN START
+========================================================= */
+
+function startRun() {
+
+    // A new run must always begin outside combat.
+    combatRunning = false;
+    turn = 1;
+
+    run.active = true;
+
+    run.floor = 1;
+    run.cost = 0;
+    run.skillSlots = 1;
+    run.ownedSkills = ["slash","heavySlash","guard"];
+    run.equippedSkills = ["slash","heavySlash","guard"];
+    run.ownedRelics = [];
+    run.equippedRelicId = null;
+
+    run.weapon =
+        weapons.ironSword;
+
+    run.weaponLevel = 1;
+    run.shopPriceBumps = {};
+    run.skillUpgrades = {};
+    run.floorBuff = null;
+    run.enemyBuff = null;
+    run.playerBuffs = {coinPowerAdd:0, damageMult:1, maxHPMult:1, maxHPFlat:0};
+    run.enemyBuffs = {hpMult:1, coinPowerAdd:0, damageMult:1, minAdditive:0, maxAdditive:0, clashPower:0, startingSP:0};
+    run.floorEnemyBuffs = [];
+
+    player.sanity = 0;
+    player.damageMult = 1;
+    player.skillUses = {};
+
+    player.maxHP = 140;
+    player.hp = 140;
+    player.staggered = false;
+    player.statuses = {clashPowerUp:{count: 0,potency:0,appliedThisTurn:false},bleed:{count: 0,potency:0,appliedThisTurn:false},burn:{count: 0,potency:0,appliedThisTurn:false},draining:{count: 0,potency:0,appliedThisTurn:false}};
+
+    loadWeapon();
+
+    generateFloor();
+
+    updateTopDisplays();
+
+    showScreen(dungeonScreen);
+    playMusic("exploration");
+}
+
+function cloneAbility(id) {
+    const base = abilities[id];
+    if (!base) return null;
+    const skill = { ...base, id };
+    const u = run.skillUpgrades[id] || {};
+    skill.clashPower = u.clashPower ?? base.clashPower;
+    skill.coinPower = u.coinPower ?? base.coinPower;
+    skill.minAdditive = u.minAdditive ?? base.minAdditive;
+    skill.maxAdditive = u.maxAdditive ?? base.maxAdditive;
+    skill.attackPower = u.attackPower ?? base.attackPower;
+    return skill;
+}
+
+function loadWeapon() {
+    player.skills = run.equippedSkills.map(id => cloneAbility(id)).filter(Boolean);
+    player.plan = Array(run.skillSlots).fill(null);
+}
+
+/* =========================================================
+   TOP DISPLAYS
+========================================================= */
+
+function updateTopDisplays() {
+
+    document.getElementById(
+        "floorDisplay"
+    ).textContent = run.floor;
+
+    document.getElementById(
+        "floorTitle"
+    ).textContent = run.floor;
+
+    document.getElementById(
+        "costDisplay"
+    ).textContent = run.cost;
+
+    document.getElementById(
+        "slotDisplay"
+    ).textContent = run.skillSlots;
+
+    document.getElementById(
+        "combatFloor"
+    ).textContent = run.floor;
+
+    document.getElementById(
+        "combatCost"
+    ).textContent = run.cost;
+}
+
+/* =========================================================
+   DUNGEON MAP
+========================================================= */
+
+function roomReward(difficulty) {
+    const base = { easy: 37, normal: 47, hard: 63, challenge: 87, boss: 135 }[difficulty] || 40;
+    return Math.floor(base * (1 + (run.floor - 1) * .12));
+}
+
+function difficultyForRoom(index) {
+    const r = Math.random();
+    // Floor 1 is deliberately forgiving: no hard rooms yet.
+    if (run.floor === 1) return r < .65 ? "easy" : "normal";
+    if (r < .22) return "easy";
+    if (r < .72) return "normal";
+    return "hard";
+}
+
+function generateFloor() {
+    run.mapVersion++;
+    run.nodes = [];
+    run.currentNode = null;
+
+    // Shop prices do not increase simply because the floor changed.
+    // Individual prices only rise after that specific item is purchased.
+
+    const rows = [[], [], [], []];
+    const makeNode = (row, col, type, difficulty) => ({
+        id: `${run.mapVersion}-${row}-${col}-${Math.random().toString(36).slice(2,7)}`,
+        row, col, type, difficulty,
+        reward: roomReward(difficulty),
+        state: "locked",
+        enemy: null,
+        enemyDefinition: null,
+        enemyModifiers: [],
+        enemySlots: 1,
+        leadsTo: []
+    });
+
+    // One start node, followed by four columns of three choices.
+    const start = makeNode(0, 1, "start", "normal");
+    start.state = "available";
+    start.reward = 0;
+    run.nodes.push(start);
+
+    for (let row = 1; row <= 4; row++) {
+        const challengeIndex = run.floor >= 2 && Math.random() < .30 ? Math.floor(Math.random() * 3) : -1;
+        for (let col = 0; col < 3; col++) {
+            let difficulty = difficultyForRoom(col);
+            let type = "battle";
+            if (col === challengeIndex) {
+                type = "challenge";
+                difficulty = "challenge";
+            } else if (difficulty === "hard") {
+                type = "elite";
+            }
+            const node = makeNode(row, col, type, difficulty);
+            rows[row - 1].push(node);
+            run.nodes.push(node);
+        }
+    }
+
+    const boss = makeNode(5, 1, "boss", "boss");
+    boss.reward = roomReward("boss");
+    run.nodes.push(boss);
+
+    const shop = makeNode(6, 1, "shop", "shop");
+    shop.state = "locked";
+    shop.reward = 0;
+    run.nodes.push(shop);
+
+    // The first decision is always the three rooms immediately below START.
+    start.leadsTo = rows[0].map(n => n.id);
+    rows[0].forEach(n => n.state = "available");
+
+    // Each room has 1-2 exits, but routes are kept within the same column or
+    // an adjacent column. This prevents long crossing lines and keeps the map
+    // readable while retaining random route choices.
+    for (let r = 0; r < rows.length - 1; r++) {
+        const from = rows[r];
+        const to = rows[r + 1];
+
+        from.forEach(parent => {
+            const candidates = to.filter(child => Math.abs(child.col - parent.col) <= 1);
+            const count = Math.random() < .55 ? 1 : 2;
+            parent.leadsTo = shuffle(candidates).slice(0, count).map(child => child.id);
+        });
+
+        // Guarantee every destination remains reachable from at least one room.
+        to.forEach(child => {
+            if (from.some(parent => parent.leadsTo.includes(child.id))) return;
+            const candidates = from.filter(parent => Math.abs(parent.col - child.col) <= 1 && parent.leadsTo.length < 2);
+            const parent = candidates.length ? randomItem(candidates) : randomItem(from);
+            if (parent.leadsTo.length >= 2) parent.leadsTo.pop();
+            parent.leadsTo.push(child.id);
+        });
+    }
+
+    // Every room in the final choice column leads only to the floor boss.
+    rows[3].forEach(n => n.leadsTo = [boss.id]);
+    boss.leadsTo = [shop.id];
+
+    // Generate each room's actual encounter once. Inspection therefore shows
+    // exactly the enemy the player will fight if that room is selected.
+    run.nodes.forEach(node => {
+        if (["start", "shop"].includes(node.type)) return;
+
+        if (node.type === "boss") {
+            node.enemyDefinition = randomBossEnemy();
+            node.enemySlots = node.enemyDefinition.nursefather ? 9 : Math.min(8, node.row + 1);
+            node.enemyModifiers = generateModifiers("hard", true);
+        } else {
+            node.enemyDefinition = node.type === "challenge"
+                ? randomChallengeEnemy()
+                : node.type === "elite"
+                    ? randomEliteEnemy()
+                    : randomCombatEnemy();
+            node.enemySlots = getEnemySlotCount();
+            node.enemyModifiers = generateModifiers(node.difficulty, node.type === "challenge");
+        }
+
+        const rewardMult = (node.enemyModifiers || []).reduce((v, m) => v * (m.rewardMult || 1), 1);
+        node.reward = Math.floor(node.enemyDefinition.reward * (1 + (run.floor - 1) * .18) * rewardMult);
+    });
+
+    renderDungeon();
+}
+
+function getNodeById(id) { return run.nodes.find(n => n.id === id); }
+
+function renderDungeon() {
+    const map = document.getElementById("map");
+    map.innerHTML = "";
+    const icons = { start:"▶", battle:"⚔", elite:"✦", challenge:"♜", boss:"☠", shop:"◆" };
+    const labels = { start:"START", battle:"BATTLE", elite:"ELITE", challenge:"CHALLENGE", boss:"BOSS", shop:"SHOP" };
+
+    // Use an SVG overlay so every route is drawn from the exact centre of one
+    // node to the exact centre of the next. This avoids the old percentage-
+    // based div lines that could miss the nodes and form a messy web.
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "mapRoutes");
+    svg.setAttribute("viewBox", "0 0 1000 700");
+    svg.setAttribute("preserveAspectRatio", "none");
+    svg.style.position = "absolute";
+    svg.style.inset = "0";
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    svg.style.zIndex = "1";
+    svg.style.pointerEvents = "none";
+    map.appendChild(svg);
+
+    const xFor = col => [165, 500, 835][col] ?? 500;
+    const yFor = row => [42, 150, 258, 366, 474, 585, 662][row] ?? 42;
+
+    run.nodes.forEach(node => {
+        node.leadsTo.forEach(id => {
+            const to = getNodeById(id);
+            if (!to || to.row !== node.row + 1) return;
+
+            const x1 = xFor(node.col);
+            const y1 = yFor(node.row) + 34;
+            const x2 = xFor(to.col);
+            const y2 = yFor(to.row) - 34;
+            const midY = (y1 + y2) / 2;
+
+            // Gentle curves keep routes readable without the spider-web look.
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`);
+            path.setAttribute("fill", "none");
+            path.setAttribute("stroke", node.state === "completed" && to.state === "available" ? "#777" : "#292929");
+            path.setAttribute("stroke-width", node.state === "completed" && to.state === "available" ? "4" : "3");
+            path.setAttribute("stroke-linecap", "round");
+            path.setAttribute("opacity", node.state === "completed" && to.state === "available" ? "1" : ".42");
+            svg.appendChild(path);
+        });
+    });
+
+    run.nodes.forEach(node => {
+        const element = document.createElement("button");
+        element.className = `mapNode ${node.type} ${node.difficulty} ${node.state}`;
+        element.dataset.id = node.id;
+        element.style.left = `${(xFor(node.col) / 10)}%`;
+        element.style.top = `${(yFor(node.row) / 700) * 100}%`;
+
+        const prefix = node.state === "completed" ? "✓ " : node.state === "available" ? "→ " : "";
+        const reward = node.reward ? `<div class="nodeReward">+${node.reward} COST</div>` : "";
+        element.innerHTML = `<div class="nodeIcon">${icons[node.type]}</div><div class="nodeLabel">${prefix}${labels[node.type]}</div>${reward}`;
+
+        if (node.state === "available") {
+            element.addEventListener("click", () => chooseNode(node));
+        } else if (node.state === "unlocked") {
+            // Still inspectable, but visually dark because it cannot currently be entered.
+            element.addEventListener("click", () => inspectRoom(node));
+        }
+        map.appendChild(element);
+    });
+
+    document.getElementById("mapFooter").textContent =
+        "Choose one of the three rooms in the next column. Dark rooms cannot be entered yet.";
+}
+function chooseNode(node) {
+    if (node.state !== "available" || combatRunning) return;
+    run.currentNode = node;
+    node.state = "completed";
+    // Only rooms directly reachable from the chosen room become available.
+    run.nodes.forEach(n => { if (n.state === "available" && n !== node) n.state = "unlocked"; });
+    node.leadsTo.forEach(id => { const next = getNodeById(id); if (next) next.state = "available"; });
+    renderDungeon();
+
+    if (node.type === "boss") startBattle(node.enemyDefinition, true, node);
+    else if (node.type === "challenge") startBattle(node.enemyDefinition, false, node);
+    else if (node.type === "elite") startBattle(node.enemyDefinition, false, node);
+    else if (node.type === "battle") startBattle(node.enemyDefinition, false, node);
+    else if (node.type === "shop") openShop();
+}
+
+function unlockNextNode() {
+    if (!run.currentNode) return;
+    run.currentNode.leadsTo.forEach(id => { const next = getNodeById(id); if (next && next.state === "locked") next.state = "available"; });
+    renderDungeon();
+}
+
+function updateMapVisuals() { renderDungeon(); }
+
+function inspectRoom(node) {
+    if (!node || node.type === "boss" || node.type === "shop" || node.type === "start") return;
+    const enemy = node.enemyDefinition;
+    const mods = node.enemyModifiers || [];
+    document.getElementById("inspectName").textContent = `${enemy.name} — ${node.difficulty.toUpperCase()}`;
+    document.getElementById("inspectType").textContent = `REWARD +${node.reward} COST · ${enemy.maxHP} BASE HP · ${node.enemySlots} SKILL SLOTS · ${node.type.toUpperCase()}`;
+    document.getElementById("inspectDescription").textContent = `Enemy preview. ${enemy.abilities.map(id => (enemyAbilities[id] || abilities[id])?.name || id).join(", ")}. Modifiers: ${mods.length ? mods.map(m => m.name).join(", ") : "None"}.`;
+    document.getElementById("inspectClash").textContent = node.enemySlots;
+    document.getElementById("inspectCoinPower").textContent = "Enemy preview";
+    document.getElementById("inspectMin").textContent = enemy.reward;
+    document.getElementById("inspectMax").textContent = enemy.maxHP;
+    document.getElementById("inspectAttack").textContent = "See attacks";
+    document.getElementById("inspectEffect").textContent = mods.length ? mods.map(m=>m.name).join(", ") : "None";
+    document.getElementById("inspector").style.display = "flex";
+}
+
+/* =========================================================
+   ENEMY SELECTION
+========================================================= */
+
+function randomCombatEnemy() {
+    // Early floors deliberately use a gentle enemy pool. As the player
+    // becomes stronger, stronger enemy archetypes are introduced.
+    if (run.floor <= 1) return enemyTypes.caveRat;
+    if (run.floor <= 3) return randomItem([enemyTypes.caveRat, enemyTypes.hollowSoldier]);
+    if (run.floor <= 8) return randomItem([enemyTypes.hollowSoldier, enemyTypes.ironKnight, enemyTypes.caveRat]);
+    return randomItem([enemyTypes.hollowSoldier, enemyTypes.ironKnight, enemyTypes.hollowKnight]);
+}
+function randomEliteEnemy() { return randomItem([enemyTypes.hollowSoldier, enemyTypes.ironKnight]); }
+function randomChallengeEnemy() { return randomItem([enemyTypes.ironKnight, enemyTypes.hollowKnight]); }
+function randomBossEnemy() {
+    // Bosses escalate with the dungeon. Furioso Replica is intentionally NOT
+    // part of the normal boss pool; it belongs to The Nursefather later.
+    if (run.floor < 10) {
+        if (run.floor <= 3) return enemyTypes.caveWarden;
+        if (run.floor <= 8) return randomItem([enemyTypes.caveWarden, enemyTypes.ironWarden]);
+        if (run.floor <= 15) return randomItem([enemyTypes.ironWarden, enemyTypes.hollowKnight]);
+        if (run.floor <= 30) return randomItem([enemyTypes.ironWarden, enemyTypes.hollowKing]);
+        return enemyTypes.hollowKing;
+    }
+    return enemyTypes.nursefather;
+}
+
+function getEnemySlotCount() {
+    const floor = Math.max(1, run.floor);
+    const maxSlots = Math.min(6, floor);
+    let minSlots = floor >= 10 ? 6 : floor >= 8 ? 4 : floor >= 7 ? 3 : floor >= 6 ? 2 : floor >= 5 ? 2 : 1;
+    if (floor === 1) return 1;
+    const weights = [];
+    for (let slots=minSlots; slots<=maxSlots; slots++) {
+        let weight = 1 + (slots-minSlots)*2;
+        if (floor === 2) weight = slots===1 ? 75 : 25;
+        if (floor === 3) weight = slots===1 ? 45 : slots===2 ? 40 : 15;
+        if (floor === 4) weight = slots===1 ? 30 : slots===2 ? 45 : 25;
+        if (floor === 5) weight = slots===2 ? 35 : slots===3 ? 45 : 20;
+        if (floor === 6) weight = [30,35,20,10,5][slots-2] || 1;
+        if (floor >= 7 && slots === 6) weight += Math.min(16, floor-6);
+        weights.push({slots,weight});
+    }
+    let roll = Math.random()*weights.reduce((a,b)=>a+b.weight,0);
+    for (const w of weights) { roll -= w.weight; if (roll<=0) return w.slots; }
+    return maxSlots;
+}
+
+/* =========================================================
+   CREATE ENEMY
+========================================================= */
+
+function createEnemy(definition, isBoss = false, node = run.currentNode) {
+    const multiplier = 1 + (run.floor - 1) * .18;
+    const modifiersForEnemy = node?.enemyModifiers?.length ? node.enemyModifiers : (isBoss ? generateModifiers("hard", true) : generateModifiers(run.currentNode?.difficulty || "normal", run.currentNode?.type === "challenge"));
+    const floorEnemyBuff = run.enemyBuffs || {hpMult:1,coinPowerAdd:0,damageMult:1,minAdditive:0,maxAdditive:0,clashPower:0,startingSP:0};
+    const modHP = modifiersForEnemy.reduce((v,m)=>v*(m.hpMult||1),1) * floorEnemyBuff.hpMult;
+    const modReward = modifiersForEnemy.reduce((v,m)=>v*(m.rewardMult||1),1);
+    // Boss chains scale strictly with dungeon floor: 2 on Floor 1,
+    // +1 slot per floor, capped at 7. Node layout must not override this.
+    let slots = isBoss
+        ? Math.min(7, Math.max(2, run.floor + 1))
+        : (node?.enemySlots || getEnemySlotCount());
+    const hp = Math.floor(definition.maxHP * multiplier * modHP);
+    return {
+        name: definition.name, maxHP: hp, hp,
+        reward: Math.floor(definition.reward * multiplier * modReward),
+        slots, abilityPool: definition.abilities.map(id=>enemyAbilities[id]).filter(Boolean),
+        plan: [], staggered:false, sanity:Math.max(-50, Math.min(50, Number(floorEnemyBuff.startingSP||0))), modifiers:modifiersForEnemy,
+        nursefather: !!definition.nursefather,
+        nursefatherTriggered: false,
+        damageMult: (floorEnemyBuff.damageMult||1) * modifiersForEnemy.reduce((v,m)=>v*(m.damageMult||1),1),
+        coinPowerModifier: modifiersForEnemy.reduce((v,m)=>v+(m.coinPowerAdd||0),0)
+    };
+}
+
+/* =========================================================
+   ENEMY AI
+========================================================= */
+
+function generateEnemyPlan(enemy) {
+
+    const plan = [];
+
+    if (enemy.nursefather && enemy.nursefatherTriggered) {
+        // Furioso-Replica is reserved for the Nursefather's post-stagger retaliation.
+        plan.push(enemyAbilities.furiosoReplica);
+        while (plan.length < enemy.slots) {
+            plan.push(randomItem(enemy.abilityPool));
+        }
+        return [plan[0], ...shuffle(plan.slice(1))];
+    }
+
+    /*
+        Each slot independently chooses
+        from the enemy's ability pool.
+
+        This naturally allows:
+
+        Slash / Slash / Guard
+
+        Guard / Guard / Heavy Slash
+
+        Heavy / Slash / Slash
+
+        etc.
+    */
+
+    for (
+        let i = 0;
+        i < enemy.slots;
+        i++
+    ) {
+
+        /*
+            Guards become more likely when
+            the enemy is damaged.
+        */
+
+        const healthRatio =
+            enemy.hp /
+            enemy.maxHP;
+
+        const guardAbilities =
+            enemy.abilityPool.filter(
+                skill =>
+                    skill.type === "guard"
+            );
+
+        const attackAbilities =
+            enemy.abilityPool.filter(
+                skill =>
+                    skill.type === "attack"
+            );
+
+        let pool;
+
+        if (
+            guardAbilities.length &&
+            healthRatio < .35 &&
+            randomChance(.35)
+        ) {
+
+            pool = [
+                ...attackAbilities,
+                ...guardAbilities,
+                ...guardAbilities
+            ];
+
+        } else {
+
+            pool =
+                enemy.abilityPool;
+        }
+
+        plan.push(
+            randomItem(pool)
+        );
+    }
+
+    /*
+        Small chance to deliberately
+        reorder the resulting chain.
+    */
+
+    if (
+        randomChance(.65)
+    ) {
+
+        return shuffle(plan);
+    }
+
+    return plan;
+}
+
+/* =========================================================
+   RESET BATTLE STATE
+========================================================= */
+
+function resetBattleState() {
+    // Reset every temporary encounter value/display while preserving
+    // the player's persistent run stats: HP, max HP, weapon, upgrades,
+    // skills, and purchased skill slots.
+    combatRunning = false;
+    turn = 1;
+
+    run.currentEnemy = null;
+    run.currentEnemyDefinition = null;
+
+    player.staggered = false;
+    player.statuses = {clashPowerUp:{count: 0,potency:0,appliedThisTurn:false},bleed:{count: 0,potency:0,appliedThisTurn:false},burn:{count: 0,potency:0,appliedThisTurn:false},draining:{count: 0,potency:0,appliedThisTurn:false}};
+    player.plan = Array(run.skillSlots).fill(null);
+    player.selectedSlot = 0;
+    player.skillUses = {};
+
+    const fighterClasses = [
+        "defeated",
+        "staggered",
+        "damageHit",
+        "guardHit",
+        "clashDashPlayer",
+        "clashDashEnemy",
+        "attackDashPlayer",
+        "attackDashEnemy"
+    ];
+
+    fighterClasses.forEach(className => {
+        playerFighter.classList.remove(className);
+        enemyFighter.classList.remove(className);
+    });
+
+    clashTitle.style.opacity = "0";
+    playerRollElement.textContent = "-";
+    enemyRollElement.textContent = "-";
+    coinDisplay.innerHTML = "";
+    battleMessage.textContent = "";
+    logElement.innerHTML = "";
+
+    enemySkillsElement.innerHTML = "";
+    document.getElementById("enemyModifiers").innerHTML = "";
+    playerSkillsElement.innerHTML = "";
+    slotSelection.innerHTML = "";
+    availableSkillsElement.innerHTML = "";
+
+    battlefield
+        .querySelectorAll(".floatNumber")
+        .forEach(element => element.remove());
+
+    const startButton = document.getElementById("startButton");
+    startButton.disabled = false;
+    startButton.textContent = "START";
+}
+
+/* =========================================================
+   START BATTLE
+========================================================= */
+
+function startBattle(
+    enemyDefinition,
+    isBoss = false,
+    node = run.currentNode
+) {
+    // A room always starts a genuinely fresh encounter.
+    // Player progression/stats are preserved by resetBattleState().
+    resetBattleState();
+
+    run.currentEnemyDefinition = enemyDefinition;
+    run.currentEnemy = createEnemy(enemyDefinition, isBoss, node);
+    run.currentEnemy.isBoss = isBoss;
+    run.currentEnemy.staggered = false;
+    run.currentEnemy.statuses = {clashPowerUp:{count: 0,potency:0,appliedThisTurn:false},bleed:{count: 0,potency:0,appliedThisTurn:false},burn:{count: 0,potency:0,appliedThisTurn:false},draining:{count: 0,potency:0,appliedThisTurn:false}};
+
+    // First enemy intent must exist before the combat screen is shown.
+    prepareEnemyTurn();
+
+    loadCombatUI();
+    showScreen(combatScreen);
+    playMusic(isBoss ? (run.currentEnemy.nursefather ? "nursefather" : "boss") : "battle");
+
+    log(`A ${run.currentEnemy.name} appears.`);
+
+    if (isBoss) {
+        log("BOSS BATTLE.");
+    }
+
+    updateCombatUI();
+}
+
+/* =========================================================
+   ENEMY TURN
+========================================================= */
+
+function prepareEnemyTurn() {
+
+    const enemy =
+        run.currentEnemy;
+
+    enemy.plan =
+        generateEnemyPlan(enemy);
+}
+
+/* =========================================================
+   COMBAT UI
+========================================================= */
+
+function loadCombatUI() {
+
+    document.getElementById(
+        "enemyName"
+    ).textContent =
+        run.currentEnemy.name;
+
+    document.getElementById(
+        "playerMaxHP"
+    ).textContent =
+        player.maxHP;
+
+    document.getElementById(
+        "enemyMaxHP"
+    ).textContent =
+        run.currentEnemy.maxHP;
+
+    updateCombatUI();
+
+    renderEnemySkills();
+
+    renderPlayerSkills();
+
+    renderSlots();
+
+    renderAvailableSkills();
+}
+
+function updateCombatUI() {
+
+    document.getElementById(
+        "playerHP"
+    ).textContent =
+        player.hp;
+
+    document.getElementById(
+        "enemyHP"
+    ).textContent =
+        run.currentEnemy.hp;
+
+    document.getElementById(
+        "playerHPBar"
+    ).style.width =
+        `${displayHP(player.hp / player.maxHP * 100)}%`;
+
+    document.getElementById(
+        "enemyHPBar"
+    ).style.width =
+        `${displayHP(run.currentEnemy.hp / run.currentEnemy.maxHP * 100)}%`;
+
+    document.getElementById("playerStatus").textContent = statusText(player) + (player.staggered ? " [STAGGERED]" : "");
+    document.getElementById("enemyStatus").textContent = statusText(run.currentEnemy) + (run.currentEnemy.staggered ? " [STAGGERED]" : "");
+    const ps = document.getElementById("playerSanity");
+    const es = document.getElementById("enemySanity");
+    ps.textContent = `(SP: ${player.sanity})`;
+    es.textContent = `(SP: ${run.currentEnemy.sanity})`;
+    ps.className = `sanityText ${player.sanity >= 1 ? "sanityGood" : player.sanity < 0 ? "sanityBad" : ""}`;
+    es.className = `sanityText ${run.currentEnemy.sanity >= 1 ? "sanityGood" : run.currentEnemy.sanity < 0 ? "sanityBad" : ""}`;
+    const modBox = document.getElementById("enemyModifiers");
+    modBox.innerHTML = "";
+    (run.currentEnemy.modifiers || []).forEach(mod => {
+        const badge = document.createElement("button");
+        badge.className = "modifierBadge";
+        badge.textContent = mod.name;
+        badge.title = mod.description;
+        badge.addEventListener("click", () => inspectModifier(mod));
+        modBox.appendChild(badge);
+    });
+    playerFighter.classList.toggle("staggered", player.staggered);
+    enemyFighter.classList.toggle("staggered", run.currentEnemy.staggered);
+
+    // Both fighters lose visible ability controls while staggered.
+    renderEnemySkills();
+
+    // A staggered player must immediately lose access to ability/slot controls.
+    renderPlayerSkills();
+    renderSlots();
+    renderAvailableSkills();
+
+    const startButton = document.getElementById("startButton");
+    if (!combatRunning) {
+        startButton.textContent = player.staggered ? "STAGGERED — SKIP TURN" : "START";
+    }
+
+    document.getElementById(
+        "turnDisplay"
+    ).textContent =
+        turn;
+
+    document.getElementById(
+        "combatCost"
+    ).textContent =
+        run.cost;
+}
+
+/* =========================================================
+   SKILL CARD
+========================================================= */
+
+function createSkillCard(skill, actor = null) {
+
+    const button =
+        document.createElement("button");
+
+    button.className =
+        `skillCard ${skill.type}`;
+
+    button.innerHTML = `
+        <div class="skillCardName">
+            ${skill.name}
+        </div>
+
+        <div class="skillType">
+            ${skill.type.toUpperCase()}
+        </div>
+
+        <div class="skillCoins">
+            COINS ${skill.clashPower}
+        </div>
+    `;
+
+    button.addEventListener(
+        "click",
+        () => inspectSkill(skill, actor)
+    );
+
+    return button;
+}
+
+/* =========================================================
+   ENEMY CURRENT ATTACKS
+========================================================= */
+
+function renderEnemySkills() {
+
+    enemySkillsElement.innerHTML = "";
+    if (!run.currentEnemy || run.currentEnemy.staggered) return;
+
+    run.currentEnemy.plan.forEach(
+        (skill, index) => {
+
+            const card =
+                createSkillCard(skill, run.currentEnemy);
+
+            card.dataset.index =
+                index;
+
+            enemySkillsElement.appendChild(
+                card
+            );
+        }
+    );
+}
+
+/* =========================================================
+   PLAYER SKILLS
+========================================================= */
+
+function renderPlayerSkills() {
+
+    playerSkillsElement.innerHTML = "";
+    if (player.staggered) return;
+
+    player.skills.forEach(
+        skill => {
+
+            playerSkillsElement.appendChild(
+                createSkillCard(skill, player)
+            );
+        }
+    );
+}
+
+/* =========================================================
+   SLOTS
+========================================================= */
+
+function renderSlots() {
+
+    slotSelection.innerHTML = "";
+    if (player.staggered) return;
+
+    for (
+        let i = 0;
+        i < 6;
+        i++
+    ) {
+
+        const button =
+            document.createElement("button");
+
+        button.className = "slot";
+
+        if (
+            i >= run.skillSlots
+        ) {
+
+            button.classList.add(
+                "locked"
+            );
+
+            button.innerHTML =
+                `<small>SLOT ${i + 1}</small><br>LOCKED`;
+
+            button.disabled = true;
+
+        } else {
+
+            const skill =
+                player.plan[i];
+
+            if (
+                player.selectedSlot === i
+            ) {
+
+                button.classList.add(
+                    "active"
+                );
+            }
+
+            button.innerHTML =
+                skill
+
+                    ? `<small>SLOT ${i + 1}</small><br>${skill.name}`
+
+                    : `<small>SLOT ${i + 1}</small><br>EMPTY`;
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    if (combatRunning || player.staggered)
+                        return;
+
+                    player.selectedSlot =
+                        i;
+
+                    renderSlots();
+
+                    battleMessage.textContent =
+                        `Selecting SLOT ${i + 1}.`;
+                }
+            );
+        }
+
+        slotSelection.appendChild(
+            button
+        );
+    }
+}
+
+/* =========================================================
+   AVAILABLE PLAYER SKILLS
+========================================================= */
+
+function renderAvailableSkills() {
+
+    availableSkillsElement.innerHTML = "";
+    if (player.staggered) return;
+
+    player.skills.forEach(
+        skill => {
+
+            const wrapper =
+                document.createElement("div");
+
+            const card =
+                document.createElement("button");
+
+            card.className =
+                "availableSkill";
+
+            card.innerHTML = `
+                <div class="availableSkillName">
+                    ${skill.name}
+                </div>
+
+                <div class="availableSkillInfo">
+                    ${skill.type.toUpperCase()}
+                    · ${skill.clashPower} COINS
+                </div>
+            `;
+
+            card.addEventListener(
+                "click",
+                () => assignSkill(skill)
+            );
+
+            const actions =
+                document.createElement("div");
+
+            actions.className =
+                "skillActions";
+
+            const inspect =
+                document.createElement("button");
+
+            inspect.textContent =
+                "INSPECT";
+
+            inspect.addEventListener(
+                "click",
+                event => {
+
+                    event.stopPropagation();
+
+                    inspectSkill(skill);
+                }
+            );
+
+            const select =
+                document.createElement("button");
+
+            select.textContent =
+                "SELECT";
+
+            select.addEventListener(
+                "click",
+                event => {
+
+                    event.stopPropagation();
+
+                    assignSkill(skill);
+                }
+            );
+
+            actions.appendChild(
+                inspect
+            );
+
+            actions.appendChild(
+                select
+            );
+
+            wrapper.appendChild(card);
+            wrapper.appendChild(actions);
+
+            availableSkillsElement
+                .appendChild(wrapper);
+        }
+    );
+}
+
+/* =========================================================
+   ASSIGN PLAYER SKILL
+========================================================= */
+
+function assignSkill(skill) {
+
+    if (combatRunning || player.staggered) return;
+    const usedCount = player.plan.filter(s => s?.id === skill.id).length;
+    const replacingSame = player.plan[player.selectedSlot]?.id === skill.id;
+    if (!replacingSame && usedCount >= 2) {
+        battleMessage.textContent = `${skill.name} can only be used twice in one chain.`;
+        return;
+    }
+    player.plan[player.selectedSlot] = skill;
+
+    renderSlots();
+
+    battleMessage.textContent =
+        `${skill.name} assigned to SLOT ${player.selectedSlot + 1}.`;
+}
+
+/* =========================================================
+   INSPECTOR
+========================================================= */
+
+function skillFullDescription(skill, actor=null) {
+    const effectText = typeof getSkillEffectText === "function" ? getSkillEffectText(skill) : "None";
+    const effective = actor ? getSanityCoinPower(skill, actor) : Number(skill.coinPower ?? 0);
+    const base = abilities[skill.id] || abilities[skill.baseId];
+    const maxText = base ? ` | MAX: CP ${Math.min(95,Math.round(base.coinPower*200))}%, Clash ${base.clashPower*2}, Min ${base.minAdditive*2}, Max ${base.maxAdditive*2}, Attack ${base.attackPower*2}` : "";
+    const skillCost = Number(skill.cost ?? skill.spCost ?? 0);
+    const stats = actor ? getEffectiveSkillStats(skill, actor) : getEffectiveSkillStats(skill, null);
+    return `COST: ${skillCost} SP | ${skill.description || ""} | Clash Power: ${stats.clashPower} | Coin Power: ${Math.round((skill.coinPower ?? stats.coinPower)*100)}% base, ${Math.round(stats.coinPower*100)}% current | Min Coin Additive: ${stats.minCoinAdditive} | Max Coin Additive: ${stats.maxCoinAdditive} | Attack Power: ${stats.attackPower} | Effect: ${effectText}${maxText}`;
+}
+
+function inspectSkill(skill, actor = null) {
+
+    document.getElementById(
+        "inspectName"
+    ).textContent =
+        skill.name;
+
+    document.getElementById(
+        "inspectType"
+    ).textContent =
+        skill.type.toUpperCase();
+
+    document.getElementById(
+        "inspectDescription"
+    ).textContent =
+        skillFullDescription(skill, actor);
+
+    document.getElementById("inspectEffect").textContent = getSkillEffectText(skill);
+
+    document.getElementById(
+        "inspectClash"
+    ).textContent =
+        skill.clashPower;
+
+    const inspectionActor = actor || null;
+    const effective = inspectionActor ? getSanityCoinPower(skill, inspectionActor) : skill.coinPower;
+    document.getElementById(
+        "inspectCoinPower"
+    ).textContent = `${Math.round(skill.coinPower * 100)}% base · ${Math.round(effective * 100)}% current`;
+
+    document.getElementById(
+        "inspectMin"
+    ).textContent =
+        "+" + skill.minAdditive;
+
+    document.getElementById(
+        "inspectMax"
+    ).textContent =
+        "+" + skill.maxAdditive;
+
+    document.getElementById(
+        "inspectAttack"
+    ).textContent =
+        skill.attackPower;
+
+    document.getElementById(
+        "inspector"
+    ).style.display =
+        "flex";
+}
+
+function inspectModifier(mod) {
+    document.getElementById("inspectName").textContent = mod.name;
+    document.getElementById("inspectType").textContent = "ENEMY MODIFIER / PASSIVE";
+    document.getElementById("inspectDescription").textContent = mod.description;
+    document.getElementById("inspectEffect").textContent = "PASSIVE MODIFIER";
+    document.getElementById("inspectClash").textContent = "PASSIVE";
+    document.getElementById("inspectCoinPower").textContent = mod.coinPowerAdd ? `${mod.coinPowerAdd>0?"+":""}${Math.round(mod.coinPowerAdd*100)}%` : "—";
+    document.getElementById("inspectMin").textContent = "—";
+    document.getElementById("inspectMax").textContent = mod.hpMult ? `${displayHP(Math.round((mod.hpMult-1)*100))}% HP` : "—";
+    document.getElementById("inspectAttack").textContent = mod.damageMult ? `${displayHP(Math.round((mod.damageMult-1)*100))}% damage` : "—";
+    document.getElementById("inspector").style.display = "flex";
+}
+
+document.getElementById(
+    "closeInspector"
+).addEventListener(
+    "click",
+    () => {
+
+        document.getElementById(
+            "inspector"
+        ).style.display =
+            "none";
+    }
+);
+
+document.getElementById(
+    "inspector"
+).addEventListener(
+    "click",
+    event => {
+
+        if (
+            event.target.id ===
+            "inspector"
+        ) {
+
+            event.currentTarget
+                .style.display =
+                "none";
+        }
+    }
+);
+
+/* =========================================================
+   COIN ROLL
+========================================================= */
+
+function getSanityCoinPower(skill, actor) {
+    return getEffectiveSkillStats(skill, actor).coinPower;
+}
+
+function changeSanity(actor, amount, reason="") {
+    if (!actor) return;
+    const old = actor.sanity || 0;
+    const next = Math.max(-50, Math.min(50, old + amount));
+    actor.sanity = next;
+    if (next <= -50 && old > -50 && !actor.staggered) {
+        actor.staggered = true;
+        actor.sanity = 0;
+        if (actor.nursefather) actor.nursefatherTriggered = true;
+        const side = actor === player ? "PLAYER" : "ENEMY";
+        battleMessage.textContent = `${side} HIT -50 SP — STAGGERED.`;
+        log(`${side} reached -50 SP and became STAGGERED. SP reset to 0.`);
+        screenFlash();
+    }
+    if (reason && actor === player) log(`SANITY ${amount >= 0 ? "+" : ""}${amount}: ${reason} (SP ${actor.sanity}).`);
+}
+
+function rollAbility(skill, coinCount = skill.clashPower, actor = null) {
+    let result = 1;
+    const coins = [];
+    const effective = getEffectiveSkillStats(skill, actor);
+    const coinPower = effective.coinPower;
+    const temporaryCoins = actor ? (ensureStatusState(actor).clashPowerUp?.count > 0 ? ensureStatusState(actor).clashPowerUp.potency : 0) : 0;
+    coinCount = Math.max(0, Math.floor(effective.clashPower + temporaryCoins));
+    for (let i=0; i<coinCount; i++) {
+        const heads = randomChance(coinPower);
+        const additive = heads ? effective.maxCoinAdditive : effective.minCoinAdditive;
+        result += additive;
+        coins.push({heads, additive});
+    }
+    return { result, coins, coinPower };
+}
+
+/* =========================================================
+   DAMAGE
+========================================================= */
+
+function calculateDamage(
+    skill,
+    roll,
+    clashAttempts = 0,
+    actor = null
+) {
+
+    const rollMultiplier =
+        1 +
+        ((roll - 1) * .1);
+
+    const clashMultiplier =
+        clashAttempts > 0
+            ? clashAttempts
+            : 1;
+
+    const effective=getEffectiveSkillStats(skill, actor);
+    let multiplier = 1;
+    if (actor?.damageMult) multiplier *= actor.damageMult;
+    if (actor === player) multiplier *= Number(run.playerBuffs?.damageMult||1);
+    if (actor === run.currentEnemy) multiplier *= Number(run.enemyBuffs?.damageMult||1);
+    // Heavy Slash is deliberately better when it gets an unopposed opening.
+    // Its two-coin clash profile remains the risk that keeps it from replacing Slash.
+    if (skill?.id === "heavySlash" && clashAttempts === 0) multiplier *= 1.12;
+    return intDamage(Math.max(1, Math.floor(effective.attackPower * rollMultiplier * clashMultiplier * multiplier)));
+}
+
+/* =========================================================
+   EFFECTS
+========================================================= */
+
+function screenShake() {
+
+    app.classList.remove(
+        "shake"
+    );
+
+    void app.offsetWidth;
+
+    app.classList.add(
+        "shake"
+    );
+}
+
+function screenFlash() {
+
+    const flash =
+        document.getElementById(
+            "flash"
+        );
+
+    flash.classList.remove(
+        "active"
+    );
+
+    void flash.offsetWidth;
+
+    flash.classList.add(
+        "active"
+    );
+}
+
+function hitFighter(
+    fighter
+) {
+
+    fighter.classList.remove(
+        "damageHit"
+    );
+
+    void fighter.offsetWidth;
+
+    fighter.classList.add(
+        "damageHit"
+    );
+}
+
+function guardHit() {
+
+    playerFighter.classList.remove(
+        "guardHit"
+    );
+
+    void playerFighter.offsetWidth;
+
+    playerFighter.classList.add(
+        "guardHit"
+    );
+}
+
+function floatingNumber(
+    fighter,
+    number
+) {
+
+    const rect =
+        fighter.getBoundingClientRect();
+
+    const fieldRect =
+        battlefield.getBoundingClientRect();
+
+    const element =
+        document.createElement("div");
+
+    element.className =
+        "floatNumber";
+
+    element.textContent =
+        "-" + number;
+
+    element.style.left =
+        `${rect.left - fieldRect.left + rect.width / 2}px`;
+
+    element.style.top =
+        `${rect.top - fieldRect.top + 40}px`;
+
+    battlefield.appendChild(
+        element
+    );
+
+    setTimeout(
+        () => element.remove(),
+        800
+    );
+}
+
+/* =========================================================
+   COIN DISPLAY
+========================================================= */
+
+async function displayCoins(
+    coins,
+    broken = 0
+) {
+
+    coinDisplay.innerHTML = "";
+
+    for (
+        let i = 0;
+        i < coins.length;
+        i++
+    ) {
+
+        const coin =
+            coins[i];
+
+        const element =
+            document.createElement("div");
+
+        element.className =
+            "coin " +
+            (
+                coin.heads
+                    ? "heads"
+                    : "tails"
+            );
+
+        element.textContent =
+            coin.heads
+                ? "H"
+                : "T";
+
+        if (
+            i >= coins.length - broken
+        ) {
+
+            element.classList.add(
+                "broken"
+            );
+        }
+
+        coinDisplay.appendChild(
+            element
+        );
+
+        await sleep(80);
+    }
+}
+
+/* =========================================================
+   DAMAGE + STAGGER
+========================================================= */
+
+function applyDamage(target, damage, targetSide) {
+    damage = intDamage(damage);
+    const wasStaggered = target.staggered;
+    damage *= getBleedDamageMultiplier(target);
+    const finalDamage = wasStaggered ? damage * 2 : damage;
+    target.hp = intHP(Math.max(0, target.hp - finalDamage));
+    if (finalDamage >= 30) screenFlash();
+    if (finalDamage >= 60) { app.classList.remove("tilt"); void app.offsetWidth; app.classList.add("tilt"); }
+    if (target === player) {
+        changeSanity(player, -1, "you were damaged");
+        changeSanity(run.currentEnemy, 1);
+    } else if (target === run.currentEnemy) {
+        changeSanity(run.currentEnemy, -1);
+        changeSanity(player, 1, "you damaged the enemy");
+    }
+    const ironWill = (target.modifiers || []).some(m=>m.ironWill);
+    if (target.hp > 0 && target.hp < target.maxHP * .5 && !wasStaggered && !ironWill) {
+        target.staggered = true;
+        if (target.nursefather) {
+            target.nursefatherTriggered = true;
+        }
+        battleMessage.textContent = `${targetSide} IS STAGGERED.`;
+        log(`${targetSide} is STAGGERED — next turn is lost and incoming damage is doubled.`);
+        screenFlash();
+    }
+    return finalDamage;
+}
+
+function applySkillStatus(attacker, target, skill) {
+    if (!skill || !target) return;
+    const id = skill.id || Object.keys(abilities).find(k => abilities[k].name === skill.name);
+    const effect = ABILITY_STATUS[id];
+    if (!effect) return;
+    const effects = effect.effects || [effect];
+    for(const e of effects){
+        if(!e?.type) continue;
+        addStatusEffect(target, e.type, e.count, e.potency);
+        log(`${attacker === player ? "PLAYER" : "ENEMY"} applies ${STATUS_DEFS[e.type].name} ${e.count}:${e.potency}.`);
+    }
+}
+
+/* =========================================================
+   UNOPPOSED ATTACK
+========================================================= */
+
+async function performUnopposed(
+    attacker,
+    attackerSide
+) {
+
+    const attackerIsPlayer =
+        attackerSide === "PLAYER";
+
+    battleMessage.textContent =
+        `${attackerSide} ATTACKS UNOPPOSED.`;
+
+    log(
+        `${attackerSide}: ${attacker.name} is unopposed.`
+    );
+
+    const fighter =
+        attackerIsPlayer
+            ? playerFighter
+            : enemyFighter;
+
+    fighter.classList.add(
+        attackerIsPlayer
+            ? "attackDashPlayer"
+            : "attackDashEnemy"
+    );
+
+    await sleep(300);
+
+    const roll =
+        rollAbility(attacker, attacker.clashPower, attackerIsPlayer ? player : run.currentEnemy);
+
+    await displayCoins(
+        roll.coins
+    );
+
+    playerRollElement.textContent =
+        attackerIsPlayer
+            ? roll.result
+            : "-";
+
+    enemyRollElement.textContent =
+        attackerIsPlayer
+            ? "-"
+            : roll.result;
+
+    await sleep(180);
+
+    let damage =
+        calculateDamage(attacker, roll.result, 0, attackerIsPlayer ? player : run.currentEnemy);
+
+    if (
+        attackerIsPlayer
+    ) {
+
+        damage = applyDamage(run.currentEnemy, damage, "ENEMY");
+        applySkillStatus(player, run.currentEnemy, attacker);
+
+        hitFighter(
+            enemyFighter
+        );
+
+        floatingNumber(
+            enemyFighter,
+            damage
+        );
+
+    } else {
+
+        damage = applyDamage(player, damage, "PLAYER");
+        applySkillStatus(run.currentEnemy, player, attacker);
+
+        hitFighter(
+            playerFighter
+        );
+
+        floatingNumber(
+            playerFighter,
+            damage
+        );
+    }
+
+    screenShake();
+
+    log(
+        `${attackerSide}: ${attacker.name} rolled ${roll.result} and dealt ${displayHP(damage)}.`
+    );
+
+    await sleep(350);
+
+    fighter.classList.remove(
+        "attackDashPlayer",
+        "attackDashEnemy"
+    );
+}
+
+/* =========================================================
+   GUARD
+========================================================= */
+
+async function performGuard(
+    defender,
+    incomingAttack,
+    defenderSide
+) {
+
+    battleMessage.textContent =
+        `${defenderSide} uses ${defender.name}.`;
+
+    const guardRoll =
+        rollAbility(defender, defender.clashPower, defenderSide === "PLAYER" ? player : run.currentEnemy);
+
+    const attackRoll =
+        rollAbility(incomingAttack, incomingAttack.clashPower, defenderSide === "PLAYER" ? run.currentEnemy : player);
+
+    if (
+        defenderSide === "PLAYER"
+    ) {
+
+        playerRollElement.textContent =
+            guardRoll.result;
+
+        enemyRollElement.textContent =
+            attackRoll.result;
+
+    } else {
+
+        playerRollElement.textContent =
+            attackRoll.result;
+
+        enemyRollElement.textContent =
+            guardRoll.result;
+    }
+
+    await displayCoins(
+        guardRoll.coins
+    );
+
+    await sleep(250);
+
+    if (
+        guardRoll.result >=
+        attackRoll.result
+    ) {
+
+        battleMessage.textContent =
+            `${defenderSide} GUARD HOLDS.`;
+
+        log(
+            `${defenderSide} GUARD: ${guardRoll.result} vs ${attackRoll.result} — NO DAMAGE.`
+        );
+
+        if (
+            defenderSide === "PLAYER"
+        ) {
+
+            guardHit();
+
+        } else {
+
+            hitFighter(
+                enemyFighter
+            );
+        }
+
+        screenShake();
+
+        await sleep(300);
+
+        return;
+    }
+
+    const difference =
+        attackRoll.result -
+        guardRoll.result;
+
+    let damage =
+        calculateDamage(incomingAttack, difference, 0, defenderSide === "PLAYER" ? run.currentEnemy : player);
+
+    // Guard is not an attack replacement: when it breaks, it still softens
+    // the damage that gets through by 25%.
+    damage = Math.max(1, Math.floor(damage * 0.75));
+
+    if (
+        defenderSide === "PLAYER"
+    ) {
+
+        damage = applyDamage(player, damage, "PLAYER");
+        applySkillStatus(run.currentEnemy, player, incomingAttack);
+
+        floatingNumber(
+            playerFighter,
+            damage
+        );
+
+        hitFighter(
+            playerFighter
+        );
+
+    } else {
+
+        damage = applyDamage(run.currentEnemy, damage, "ENEMY");
+        applySkillStatus(player, run.currentEnemy, incomingAttack);
+
+        floatingNumber(
+            enemyFighter,
+            damage
+        );
+
+        hitFighter(
+            enemyFighter
+        );
+    }
+
+    battleMessage.textContent =
+        `${defenderSide} GUARD BROKEN.`;
+
+    log(
+        `${defenderSide} GUARD BROKEN: ${attackRoll.result} vs ${guardRoll.result} → ${displayHP(damage)} damage.`
+    );
+
+    screenShake();
+
+    await sleep(350);
+}
+
+/* =========================================================
+   CLASH EFFECTS
+========================================================= */
+
+function spawnClashSparks(intensity=1) {
+    const rect = battlefield.getBoundingClientRect();
+    const x = rect.width / 2;
+    const y = rect.height * .38;
+    const count = Math.min(18, 5 + intensity * 2);
+    for (let i=0;i<count;i++) {
+        const spark = document.createElement("span");
+        spark.className = "clashSpark";
+        spark.style.left = `${x}px`;
+        spark.style.top = `${y}px`;
+        spark.style.setProperty("--sx", `${(Math.random()-.5)*100*intensity}px`);
+        spark.style.setProperty("--sy", `${(Math.random()-.5)*80*intensity}px`);
+        battlefield.appendChild(spark);
+        setTimeout(()=>spark.remove(),450);
+    }
+}
+
+async function clashImpact(playerRoll, enemyRoll, attempt) {
+    const diff = playerRoll - enemyRoll;
+    const playerPush = diff > 0 ? 62 : diff < 0 ? 178 : 120;
+    const enemyPush = diff > 0 ? -62 : diff < 0 ? -178 : -120;
+    playerFighter.style.transform = `translateX(${playerPush}px)`;
+    enemyFighter.style.transform = `translateX(${enemyPush}px)`;
+    spawnClashSparks(Math.min(5, 1 + Math.floor(attempt/2)));
+    screenShake();
+    if (attempt >= 3 || Math.max(playerRoll, enemyRoll) >= 15) screenFlash();
+    if (attempt >= 4 || Math.max(playerRoll, enemyRoll) >= 20) {
+        app.classList.remove("tilt"); void app.offsetWidth; app.classList.add("tilt");
+    }
+    await sleep(Math.max(90, 180 - attempt*8));
+}
+
+function resetClashTransforms() {
+    playerFighter.style.transform = "";
+    enemyFighter.style.transform = "";
+    playerFighter.style.transitionDuration = "";
+    enemyFighter.style.transitionDuration = "";
+}
+
+/* =========================================================
+   CLASH
+========================================================= */
+
+async function performClash(
+    playerSkill,
+    enemySkill
+) {
+    battleMessage.textContent = `${playerSkill.name} CLASHES WITH ${enemySkill.name}.`;
+    clashTitle.style.opacity = "1";
+
+    // Coins are persistent for the duration of this clash. A lost clash
+    // attempt breaks exactly one coin; that coin remains visibly broken and
+    // cannot participate in any later attempt or the final attack.
+    const playerTotalCoins = Math.max(0, Math.floor(getEffectiveSkillStats(playerSkill, player).clashPower));
+    const enemyTotalCoins = Math.max(0, Math.floor(getEffectiveSkillStats(enemySkill, run.currentEnemy).clashPower));
+    let playerCoins = playerTotalCoins;
+    let enemyCoins = enemyTotalCoins;
+    let playerBroken = 0;
+    let enemyBroken = 0;
+    let attempts = 0;
+
+    while (playerCoins > 0 && enemyCoins > 0) {
+        attempts++;
+        resetClashTransforms();
+
+        const speed = Math.max(.16, .34 - attempts * .014);
+        playerFighter.style.transition = `transform ${speed}s cubic-bezier(.2,.8,.2,1)`;
+        enemyFighter.style.transition = `transform ${speed}s cubic-bezier(.2,.8,.2,1)`;
+
+        playerFighter.style.transform = "translateX(115px)";
+        enemyFighter.style.transform = "translateX(-115px)";
+
+        const pRoll = rollAbility(playerSkill, playerCoins, player);
+        const eRoll = rollAbility(enemySkill, enemyCoins, run.currentEnemy);
+
+        playerRollElement.textContent = pRoll.result;
+        enemyRollElement.textContent = eRoll.result;
+        coinDisplay.innerHTML = "";
+
+        const pDisplay = pRoll.coins.concat(Array(playerBroken).fill({heads:false}));
+        await Promise.all([
+            displayCoins(pDisplay, playerBroken),
+            sleep(Math.max(120, speed * 1000))
+        ]);
+
+        spawnClashSparks(Math.min(6, 1 + Math.floor(attempts / 2)));
+        screenShake();
+        if (attempts >= 3 || Math.max(pRoll.result, eRoll.result) >= 15) screenFlash();
+
+        if (pRoll.result === eRoll.result) {
+            battleMessage.textContent = "TIE — CLASH AGAIN.";
+            log(`CLASH ${attempts}: ${pRoll.result} = ${eRoll.result} — NO COINS BREAK.`);
+            resetClashTransforms();
+            await sleep(Math.max(90, 180 - attempts * 8));
+            continue;
+        }
+
+        if (pRoll.result < eRoll.result) {
+            playerCoins = Math.max(0, playerCoins - 1);
+            playerBroken++;
+            changeSanity(player, -1, "a coin broke");
+            changeSanity(run.currentEnemy, 1);
+            battleMessage.textContent = "PLAYER COIN BREAK.";
+            log(`CLASH ${attempts}: ${pRoll.result} < ${eRoll.result} — PLAYER LOSES 1 COIN.`);
+            playerFighter.style.transform = "translateX(-70px)";
+            enemyFighter.style.transform = "translateX(35px)";
+        } else {
+            enemyCoins = Math.max(0, enemyCoins - 1);
+            enemyBroken++;
+            changeSanity(run.currentEnemy, -1);
+            changeSanity(player, 1, "you broke an enemy coin");
+            battleMessage.textContent = "ENEMY COIN BREAK.";
+            log(`CLASH ${attempts}: ${pRoll.result} > ${eRoll.result} — ENEMY LOSES 1 COIN.`);
+            enemyFighter.style.transform = "translateX(70px)";
+            playerFighter.style.transform = "translateX(-35px)";
+        }
+
+        // Re-render immediately so the broken coin is visibly unusable for
+        // the remainder of this clash.
+        const latestPlayerRoll = pRoll.coins.concat(Array(playerBroken).fill({heads:false}));
+        coinDisplay.innerHTML = "";
+        await displayCoins(latestPlayerRoll, playerBroken);
+        await sleep(Math.max(100, 190 - attempts * 10));
+
+        if (playerCoins > 0 && enemyCoins > 0) {
+            resetClashTransforms();
+            await sleep(90);
+        }
+    }
+
+    resetClashTransforms();
+
+    if (playerCoins > 0) {
+        changeSanity(player, 2, "you won a clash");
+        changeSanity(run.currentEnemy, -2);
+        battleMessage.textContent = "PLAYER WINS THE CLASH.";
+
+        playerFighter.style.transition = "transform .22s cubic-bezier(.2,.8,.2,1)";
+        playerFighter.style.transform = "translateX(250px)";
+        await sleep(220);
+
+        const finalRoll = rollAbility(playerSkill, playerCoins, player);
+        const finalDisplay = finalRoll.coins.concat(Array(playerBroken).fill({heads:false}));
+        coinDisplay.innerHTML = "";
+        await displayCoins(finalDisplay, playerBroken);
+        let damage = calculateDamage(playerSkill, finalRoll.result, attempts, player);
+        damage = applyDamage(run.currentEnemy, damage, "ENEMY");
+        applySkillStatus(player, run.currentEnemy, playerSkill);
+        floatingNumber(enemyFighter, damage);
+        hitFighter(enemyFighter);
+        screenFlash();
+        screenShake();
+        log(`PLAYER FINAL ATTACK: ${finalRoll.result} → ${displayHP(damage)} DAMAGE.`);
+        await sleep(300);
+        resetClashTransforms();
+        return;
+    }
+
+    changeSanity(player, -2, "you lost a clash");
+    changeSanity(run.currentEnemy, 2);
+    const clashRelic = run.equippedRelicId === "clashFortune";
+    if (clashRelic) {
+        addStatusEffect(player, "clashPowerUp", 1, 2);
+        log("CLASH FORTUNE: +2 Clash Power next turn.");
+    }
+    battleMessage.textContent = "ENEMY WINS THE CLASH.";
+
+    enemyFighter.style.transition = "transform .22s cubic-bezier(.2,.8,.2,1)";
+    enemyFighter.style.transform = "translateX(-250px)";
+    await sleep(220);
+
+    const finalRoll = rollAbility(enemySkill, enemyCoins, run.currentEnemy);
+    const finalDisplay = finalRoll.coins.concat(Array(enemyBroken).fill({heads:false}));
+    coinDisplay.innerHTML = "";
+    await displayCoins(finalDisplay, enemyBroken);
+    let damage = calculateDamage(enemySkill, finalRoll.result, attempts, run.currentEnemy);
+    damage = applyDamage(player, damage, "PLAYER");
+    applySkillStatus(run.currentEnemy, player, enemySkill);
+    floatingNumber(playerFighter, damage);
+    hitFighter(playerFighter);
+    screenFlash();
+    screenShake();
+    log(`ENEMY FINAL ATTACK: ${finalRoll.result} → ${displayHP(damage)} DAMAGE.`);
+    await sleep(300);
+    resetClashTransforms();
+}
+/* =========================================================
+   MATCHUPS
+========================================================= */
+
+function buildMatchups() {
+
+    const playerTargets =
+        Array(player.plan.length)
+            .fill(null);
+
+    const enemyTargets =
+        Array(run.currentEnemy.plan.length)
+            .fill(null);
+
+    const enemyUsed =
+        new Set();
+
+    const playerUsed =
+        new Set();
+
+    /*
+        Player skills target the leftmost
+        enemy slot that is not already
+        occupied.
+    */
+
+    for (
+        let i = 0;
+        i < player.plan.length;
+        i++
+    ) {
+
+        const skill =
+            player.plan[i];
+
+        if (!skill)
+            continue;
+
+        for (
+            let j = 0;
+            j < run.currentEnemy.plan.length;
+            j++
+        ) {
+
+            if (
+                enemyUsed.has(j)
+            ) continue;
+
+            playerTargets[i] =
+                j;
+
+            enemyUsed.add(j);
+
+            break;
+        }
+    }
+
+    /*
+        Enemy skills target player
+        slots in exactly the same way.
+    */
+
+    for (
+        let i = 0;
+        i < run.currentEnemy.plan.length;
+        i++
+    ) {
+
+        for (
+            let j = 0;
+            j < player.plan.length;
+            j++
+        ) {
+
+            if (
+                !player.plan[j]
+            ) continue;
+
+            if (
+                playerUsed.has(j)
+            ) continue;
+
+            enemyTargets[i] =
+                j;
+
+            playerUsed.add(j);
+
+            break;
+        }
+    }
+
+    return {
+        playerTargets,
+        enemyTargets
+    };
+}
+
+/* =========================================================
+   RESOLVE TURN
+========================================================= */
+
+function getSkillSPCost(skill){
+    if(!skill) return 0;
+    const base=abilities[skill.id];
+    if(!base) return 0;
+    const upgraded=Object.keys(run.skillUpgrades[skill.id]||{}).length>0;
+    const starter=["slash","heavySlash","guard"].includes(skill.id);
+    if(starter && !upgraded) return 0;
+    const clash=Math.max(0, Number(skill.clashPower)-Number(base.clashPower));
+    const cp=Math.max(0, Number(skill.coinPower)-Number(base.coinPower));
+    const dmg=Math.max(0, Number(skill.attackPower)-Number(base.attackPower));
+    const baseCost=starter ? 0 : Math.ceil(base.clashPower + base.coinPower*4 + base.attackPower*.12);
+    const upgradeCost=Math.ceil(clash*2 + cp*25 + dmg*.3);
+    return Math.max(starter?1:4, baseCost + upgradeCost);
+}
+function getChainSPCost(){
+    return player.plan.filter(Boolean).reduce((sum,skill)=>sum+getSkillSPCost(skill),0);
+}
+
+async function resolveTurn() {
+
+    if(combatRunning) return;
+    const chainCost=getChainSPCost();
+    if(chainCost > 0 && (player.sanity||0) < chainCost){
+        battleMessage.textContent=`NOT ENOUGH SP — CHAIN COSTS ${chainCost} SP.`;
+        log(`TURN CANCELLED: need ${chainCost} SP, have ${player.sanity||0}.`);
+        return;
+    }
+    player.sanity=Math.max(-50,(player.sanity||0)-chainCost);
+    combatRunning = true;
+
+    // Statuses trigger at the start of each turn.
+    processStatusStart(player);
+    processStatusStart(run.currentEnemy);
+    updateCombatUI();
+    if (player.hp <= 0 || run.currentEnemy.hp <= 0) {
+        if (player.hp <= 0) return battleDefeat();
+        return battleVictory();
+    }
+
+    document.getElementById(
+        "startButton"
+    ).disabled = true;
+
+    // A stagger caused during the previous turn is consumed NOW.
+    // A stagger caused during this turn is kept for the NEXT turn.
+    const playerWasStaggered = player.staggered;
+    const enemyWasStaggered = run.currentEnemy.staggered;
+
+    const {
+        playerTargets,
+        enemyTargets
+    } =
+        buildMatchups();
+
+    /*
+        Highlight enemy attacks that
+        are currently being targeted.
+    */
+
+    enemySkillsElement
+        .querySelectorAll(".skillCard")
+        .forEach(
+            (card, index) => {
+
+                card.classList.toggle(
+                    "targeted",
+                    playerTargets.includes(
+                        index
+                    )
+                );
+            }
+        );
+
+    const maxSlots =
+        Math.max(
+            player.plan.length,
+            run.currentEnemy.plan.length
+        );
+
+    if (playerWasStaggered) {
+        battleMessage.textContent = "PLAYER IS STAGGERED — TURN SKIPPED.";
+        log("PLAYER is staggered and cannot act this turn.");
+        await sleep(500);
+    }
+
+    if (enemyWasStaggered) {
+        battleMessage.textContent = "ENEMY IS STAGGERED — TURN SKIPPED.";
+        log("ENEMY is staggered and cannot act this turn.");
+        await sleep(500);
+    }
+
+    /*
+        Entire battle resolves left → right.
+    */
+
+    for (
+        let i = 0;
+        i < maxSlots;
+        i++
+    ) {
+
+        if (
+            player.hp <= 0 ||
+            run.currentEnemy.hp <= 0
+        ) break;
+
+        let playerSkill = player.staggered ? null : (player.plan[i] || null);
+        let enemySkill = run.currentEnemy.staggered ? null : (run.currentEnemy.plan[i] || null);
+        if (playerSkill?.type === "utility") {
+            applySkillStatus(player, player, playerSkill);
+            playerSkill = null;
+        }
+
+
+        /*
+            If both sides have skills in
+            the same position, resolve them.
+        */
+
+        if (
+            playerSkill &&
+            enemySkill
+        ) {
+
+            if (
+                playerSkill.type === "guard" &&
+                enemySkill.type === "guard"
+            ) {
+
+                /*
+                    Both guard.
+                    Nobody attacks.
+                */
+
+                battleMessage.textContent =
+                    "BOTH SIDES GUARD.";
+
+                log(
+                    "Both sides guard — no attack occurs."
+                );
+
+                await sleep(250);
+
+            } else if (
+                playerSkill.type === "guard"
+            ) {
+
+                if (
+                    enemySkill.type === "attack"
+                ) {
+
+                    await performGuard(
+                        playerSkill,
+                        enemySkill,
+                        "PLAYER"
+                    );
+                }
+
+            } else if (
+                enemySkill.type === "guard"
+            ) {
+
+                if (
+                    playerSkill.type === "attack"
+                ) {
+
+                    await performGuard(
+                        enemySkill,
+                        playerSkill,
+                        "ENEMY"
+                    );
+                }
+
+            } else {
+
+                await performClash(
+                    playerSkill,
+                    enemySkill
+                );
+            }
+
+        } else if (
+            playerSkill
+        ) {
+
+            if (
+                playerSkill.type === "attack"
+            ) {
+
+                await performUnopposed(
+                    playerSkill,
+                    "PLAYER"
+                );
+            }
+
+        } else if (
+            enemySkill
+        ) {
+
+            if (
+                enemySkill.type === "attack"
+            ) {
+
+                await performUnopposed(
+                    enemySkill,
+                    "ENEMY"
+                );
+            }
+        }
+
+        updateCombatUI();
+
+        await sleep(220);
+    }
+
+    updateCombatUI();
+
+    /*
+        Victory.
+    */
+
+    if (
+        run.currentEnemy.hp <= 0
+    ) {
+
+        await battleVictory();
+
+        return;
+    }
+
+    /*
+        Defeat.
+    */
+
+    if (
+        player.hp <= 0
+    ) {
+
+        await battleDefeat();
+
+        return;
+    }
+
+    /*
+        Next turn.
+    */
+
+    updateCombatUI();
+
+    // Status Count decreases only after the turn has completely resolved.
+    tickStatusEffects(player);
+    tickStatusEffects(run.currentEnemy);
+
+    turn++;
+
+    // A stagger lasts through one COMPLETE turn.
+    // If it existed when this turn began, it has now been consumed.
+    // If it was inflicted during this turn, it remains for the next turn.
+    if (playerWasStaggered) {
+        player.staggered = false;
+    }
+    if (enemyWasStaggered) {
+        run.currentEnemy.staggered = false;
+    }
+
+    player.plan =
+        Array(run.skillSlots)
+            .fill(null);
+
+    player.selectedSlot = 0;
+    player.skillUses = {};
+
+    prepareEnemyTurn();
+
+    renderEnemySkills();
+
+    renderSlots();
+
+    renderAvailableSkills();
+
+    enemySkillsElement
+        .querySelectorAll(".skillCard")
+        .forEach(
+            (card, index) => {
+
+                card.classList.remove(
+                    "targeted"
+                );
+            }
+        );
+
+    clashTitle.style.opacity = "0";
+
+    playerRollElement.textContent = "-";
+    enemyRollElement.textContent = "-";
+
+    coinDisplay.innerHTML = "";
+
+    updateCombatUI();
+
+    battleMessage.textContent =
+        "Choose your next skill chain.";
+
+    log(
+        `TURN ${turn} — enemy intent changed.`
+    );
+
+    document.getElementById(
+        "startButton"
+    ).disabled = false;
+
+    combatRunning = false;
+}
+
+document.getElementById("startButton").addEventListener("click", resolveTurn);
+
+/* =========================================================
+   BATTLE VICTORY
+========================================================= */
+
+async function showRelicPopup(relic) {
+  const popup=document.getElementById("relicPopup");
+  const title=document.getElementById("relicPopupTitle");
+  const icon=document.getElementById("relicPopupIcon");
+  const text=document.getElementById("relicPopupText");
+  const btn=document.getElementById("relicPopupContinue");
+  if(!popup) return;
+  if(relic){
+    title.textContent="RELIC COLLECTED";
+    icon.textContent="◇";
+    text.innerHTML=`<strong>${relic.name}</strong><br>${relic.desc}<br><small>Added to your collection and equipped.</small>`;
+  }else{
+    title.textContent="NO RELIC FOUND";
+    icon.textContent="×";
+    text.textContent="The boss left nothing behind.";
+  }
+  popup.hidden=false;
+  await new Promise(resolve=>btn.onclick=()=>{popup.hidden=true;resolve();});
+}
+
+async function battleVictory() {
+
+    combatRunning = true;
+
+    const reward =
+        run.currentEnemy.reward;
+
+    run.cost += reward;
+    player.statuses = {clashPowerUp:{count: 0,potency:0,appliedThisTurn:false},bleed:{count: 0,potency:0,appliedThisTurn:false},burn:{count: 0,potency:0,appliedThisTurn:false},draining:{count: 0,potency:0,appliedThisTurn:false}};
+    if (run.currentEnemy) run.currentEnemy.statuses = {clashPowerUp:{count: 0,potency:0,appliedThisTurn:false},bleed:{count: 0,potency:0,appliedThisTurn:false},burn:{count: 0,potency:0,appliedThisTurn:false},draining:{count: 0,potency:0,appliedThisTurn:false}};
+
+    if (run.currentNode && run.currentNode.type === "boss") {
+        const available = RELICS.filter(r => !run.ownedRelics.includes(r.id));
+        const relic = available.length && Math.random() < 0.80 ? randomItem(available) : null;
+        if (relic) {
+            run.ownedRelics.push(relic.id);
+            run.equippedRelicId = relic.id;
+            log(`RELIC ACQUIRED: ${relic.name}.`);
+        }
+        await showRelicPopup(relic);
+    }
+
+    updateCombatUI();
+
+    battleMessage.textContent =
+        "VICTORY.";
+
+    enemyFighter.classList.add(
+        "defeated"
+    );
+
+    log(
+        `VICTORY — +${reward} COST.`
+    );
+
+    await sleep(900);
+
+    // The room is only allowed to advance once its encounter is actually won.
+    // This prevents the dungeon from becoming stuck with every later room locked.
+    unlockNextNode();
+
+    // The fight is over. Allow the player to select the next dungeon room.
+    combatRunning = false;
+
+    showResult(
+        true,
+        reward
+    );
+}
+
+/* =========================================================
+   BATTLE DEFEAT
+========================================================= */
+
+async function battleDefeat() {
+
+    combatRunning = true;
+
+    battleMessage.textContent =
+        "DEFEAT.";
+
+    playerFighter.classList.add(
+        "defeated"
+    );
+
+    log(
+        "PLAYER DEFEATED."
+    );
+
+    await sleep(900);
+
+    showResult(
+        false,
+        0
+    );
+}
+
+/* =========================================================
+   RESULT
+========================================================= */
+
+function showResult(
+    victory,
+    reward
+) {
+
+    const title =
+        document.getElementById(
+            "resultTitle"
+        );
+
+    const text =
+        document.getElementById(
+            "resultText"
+        );
+
+    if (victory) {
+
+        title.textContent =
+            "VICTORY";
+
+        text.textContent =
+            `You gained ${reward} COST. Current COST: ${run.cost}.`;
+
+        document.getElementById(
+            "resultContinue"
+        ).textContent =
+            "RETURN TO DUNGEON";
+
+        document.getElementById(
+            "resultContinue"
+        ).onclick =
+            () => {
+
+                // Returning from a completed encounter must leave combat locked off.
+                combatRunning = false;
+                generateFloorForContinuation();
+
+                showScreen(
+                    dungeonScreen
+                );
+            };
+
+    } else {
+
+        title.textContent =
+            "DEFEAT";
+
+        text.textContent =
+            `You died on floor ${run.floor}. Everything is lost. Back to Floor 1.`;
+
+        document.getElementById(
+            "resultContinue"
+        ).textContent =
+            "NEW RUN";
+
+        document.getElementById(
+            "resultContinue"
+        ).onclick =
+            startRun;
+    }
+
+    showScreen(
+        resultScreen
+    );
+    playMusic("exploration");
+}
+
+/* =========================================================
+   CONTINUE DUNGEON
+========================================================= */
+
+function generateFloorForContinuation() {
+    // Clear encounter-only state when returning to the dungeon.
+    // Persistent player/run stats are untouched.
+    resetBattleState();
+    updateTopDisplays();
+    renderDungeon();
+}
+
+/* =========================================================
+   SHOP
+========================================================= */
+
+function openShop() {
+
+    updateShop();
+
+    showScreen(
+        shopScreen
+    );
+}
+
+function shopPrice(base, key="generic") {
+    return base + (run.shopPriceBumps[key] || 0);
+}
+
+function increaseShopPrice(key) {
+    run.shopPriceBumps[key] = (run.shopPriceBumps[key] || 0) + 10;
+}
+
+function playerHasSkill(id) {
+    return run.ownedSkills.includes(id);
+}
+
+function equipSkill(id) {
+    if (!run.ownedSkills.includes(id)) return false;
+    if (run.equippedSkills.includes(id)) return true;
+    if (run.equippedSkills.length >= 6) return false;
+    run.equippedSkills.push(id);
+    loadWeapon();
+    return true;
+}
+
+function unequipSkill(id) {
+    if (run.equippedSkills.length <= 1) return false;
+    const i = run.equippedSkills.indexOf(id);
+    if (i < 0) return false;
+    run.equippedSkills.splice(i, 1);
+    loadWeapon();
+    return true;
+}
+
+function acquireOrReplaceSkill(id) {
+    if (run.ownedSkills.includes(id)) return false;
+    run.ownedSkills.push(id);
+    if (run.equippedSkills.length < 6) run.equippedSkills.push(id);
+    loadWeapon();
+    return true;
+}
+
+function upgradePlayerSkill(skill, stat) {
+    const base = abilities[skill.id];
+    if (!base) return false;
+    const u = run.skillUpgrades[skill.id] ||= {};
+    if (stat === "coin") { const next = Math.min(.99, base.coinPower * 2, skill.coinPower + .03); if (next <= skill.coinPower) return false; skill.coinPower = next; u.coinPower = next; }
+    if (stat === "clash") { const next = Math.min(base.clashPower * 2, skill.clashPower + 1); if (next <= skill.clashPower) return false; skill.clashPower = next; u.clashPower = next; }
+    if (stat === "damage" && skill.type === "attack") { const next = Math.min(base.attackPower * 2, skill.attackPower + 2); if (next <= skill.attackPower) return false; skill.attackPower = next; u.attackPower = next; }
+    if (stat === "min") { const next = Math.min(base.minAdditive * 2, skill.minAdditive + 1); if (next <= skill.minAdditive) return false; skill.minAdditive = next; u.minAdditive = next; }
+    if (stat === "max") { const next = Math.min(base.maxAdditive * 2, skill.maxAdditive + 1); if (next <= skill.maxAdditive) return false; skill.maxAdditive = next; u.maxAdditive = next; }
+    return true;
+}
+
+
+function skillStatMaxed(skill, stat) {
+    const base = abilities[skill.id];
+    if (!base) return true;
+    if (stat === "coin") return skill.coinPower >= Math.min(.99, base.coinPower * 2) - 1e-9;
+    if (stat === "clash") return skill.clashPower >= base.clashPower * 2;
+    if (stat === "damage") return skill.type !== "attack" || skill.attackPower >= base.attackPower * 2;
+    if (stat === "min") return skill.minAdditive >= base.minAdditive * 2;
+    if (stat === "max") return skill.maxAdditive >= base.maxAdditive * 2;
+    return true;
+}
+
+function skillUpgradeCost(skill, stat) {
+    const base = stat === "coin" ? 110 : stat === "clash" ? 125 : stat === "damage" ? 115 : 95;
+    const id = skill.id || skill.name;
+    return shopPrice(base, `upgrade:${id}:${stat}`);
+}
+
+function upgradePlayerSkill(skill, stat) {
+    const base = abilities[skill.id];
+    if (!base) return false;
+    const u = run.skillUpgrades[skill.id] ||= {};
+    if (stat === "coin") { const next = Math.min(.99, base.coinPower * 2, skill.coinPower + .03); if (next <= skill.coinPower) return false; skill.coinPower = next; u.coinPower = next; }
+    if (stat === "clash") { const next = Math.min(base.clashPower * 2, skill.clashPower + 1); if (next <= skill.clashPower) return false; skill.clashPower = next; u.clashPower = next; }
+    if (stat === "damage" && skill.type === "attack") { const next = Math.min(base.attackPower * 2, skill.attackPower + 2); if (next <= skill.attackPower) return false; skill.attackPower = next; u.attackPower = next; }
+    if (stat === "min") { const next = Math.min(base.minAdditive * 2, skill.minAdditive + 1); if (next <= skill.minAdditive) return false; skill.minAdditive = next; u.minAdditive = next; }
+    if (stat === "max") { const next = Math.min(base.maxAdditive * 2, skill.maxAdditive + 1); if (next <= skill.maxAdditive) return false; skill.maxAdditive = next; u.maxAdditive = next; }
+    return true;
+}
+
+function skillUpgradeCost(skill, stat) {
+    const base = stat === "coin" ? 125 : stat === "clash" ? 145 : stat === "damage" ? 135 : 110;
+    return shopPrice(base);
+}
+
+function updateShop() {
+
+    document.getElementById(
+        "shopCost"
+    ).textContent =
+        run.cost;
+
+    const container =
+        document.getElementById(
+            "shopItems"
+        );
+
+    container.innerHTML = "";
+
+    // RELICS
+    const relicHeader=document.createElement("div");
+    relicHeader.className="shopItem";
+    relicHeader.innerHTML=`<h3>RELIC COLLECTION — ${run.ownedRelics.length}</h3><p>Only one relic may be equipped.</p>`;
+    container.appendChild(relicHeader);
+    run.ownedRelics.forEach(id=>{
+        const relic=RELICS.find(r=>r.id===id);
+        if(!relic) return;
+        const card=document.createElement("div");
+        card.className="shopItem relic-card";
+        const equipped=run.equippedRelicId===id;
+        card.innerHTML=`<h3>${equipped?"EQUIPPED: ":""}${relic.name}</h3><p>${relic.desc}</p>`;
+        const eq=document.createElement("button");
+        eq.textContent=equipped?"UNEQUIP":"EQUIP";
+        eq.onclick=()=>{run.equippedRelicId=equipped?null:id;updateShop();};
+        card.appendChild(eq);
+        const sell=document.createElement("button");
+        sell.textContent="SELL — 40 COST";
+        sell.onclick=()=>{run.cost+=40;run.ownedRelics=run.ownedRelics.filter(x=>x!==id);if(run.equippedRelicId===id)run.equippedRelicId=null;updateShop();updateTopDisplays();};
+        card.appendChild(sell);
+        container.appendChild(card);
+    });
+
+    const deckNote = document.createElement("div");
+    deckNote.className = "shopItem";
+    deckNote.innerHTML = `<h3>SKILL DECK — ${run.equippedSkills.length}/6</h3><p>${player.skills.map((s,i)=>`${i+1}. ${s.name}`).join(" · ")}</p><small>Owned: ${run.ownedSkills.length}. Equip or unequip owned skills freely. Buying a skill never destroys an owned skill.</small>`;
+    container.appendChild(deckNote);
+
+    const upgrades = [
+
+        {
+            name:
+                "SHARPEN WEAPON",
+
+            description:
+                "+2 ATTACK POWER to all attack skills.",
+
+            cost:
+                shopPrice(100, "general:sharpen"),
+
+            action:
+                () => {
+
+                    run.weaponLevel++;
+
+                    player.skills.forEach(
+                        skill => {
+
+                            if (
+                                skill.type ===
+                                "attack"
+                            ) {
+
+                                skill.attackPower += 2;
+                            }
+                        }
+                    );
+                }
+        },
+
+        {
+            name:
+                "EXTRA SKILL SLOT",
+
+            description:
+                "Unlock another position in your skill chain.",
+
+            cost:
+                shopPrice(90, "general:slot"),
+
+            action:
+                () => {
+
+                    if (
+                        run.skillSlots < 6
+                    ) {
+
+                        run.skillSlots++;
+                        player.plan = Array(run.skillSlots).fill(null);
+                    }
+                },
+
+            condition:
+                () =>
+                    run.skillSlots < 6
+        },
+
+        {
+            name:
+                "REINFORCED EDGE",
+
+            description:
+                "+10 maximum HP.",
+
+            cost:
+                shopPrice(65, "general:hp"),
+
+            action:
+                () => {
+
+                    player.maxHP += 10;
+
+                    player.hp += 10;
+                }
+        },
+
+        {
+            name:
+                "HP REFILL",
+            description:
+                "Restore 35 HP. Health persists between encounters.",
+            cost:
+                shopPrice(50, "general:refill"),
+            action:
+                () => {
+                    player.hp = Math.min(player.maxHP, player.hp + 35);
+                }
+        },
+        {
+            name:
+                "+10 SANITY",
+            description:
+                "Gain 10 permanent Sanity Points for this run. Max +50.",
+            cost:
+                shopPrice(75, "general:sanity"),
+            action:
+                () => { changeSanity(player, 10, "shop purchase"); }
+            ,condition:
+                () => player.sanity < 50
+        }
+    ];
+
+    // Owned skills can be equipped and unequipped freely.
+    run.ownedSkills.forEach(id => {
+        const skill = abilities[id];
+        if (!skill) return;
+        const equipped = run.equippedSkills.includes(id);
+        const card = document.createElement("div");
+        card.className = "shopItem";
+        card.innerHTML = `<h3>${equipped ? "EQUIPPED" : "OWNED"}: ${skill.name}</h3><p>${skillFullDescription(skill)}</p>`;
+        const b = document.createElement("button");
+        b.disabled = !equipped && run.equippedSkills.length >= 6;
+        b.textContent = equipped ? "UNEQUIP" : "EQUIP";
+        b.onclick = () => {
+            if (equipped) unequipSkill(id); else equipSkill(id);
+            updateShop();
+        };
+        card.appendChild(b);
+        if (run.ownedSkills.length > 3) {
+            const sell=document.createElement("button");
+            sell.textContent="SELL — 50 COST";
+            sell.onclick=()=>{
+                if(run.ownedSkills.length<=3) return;
+                run.cost+=50;
+                run.ownedSkills=run.ownedSkills.filter(x=>x!==id);
+                run.equippedSkills=run.equippedSkills.filter(x=>x!==id);
+                if(run.equippedSkills.length<3){
+                    const fallback=run.ownedSkills.filter(x=>!run.equippedSkills.includes(x))[0];
+                    if(fallback) run.equippedSkills.push(fallback);
+                }
+                loadWeapon(); updateShop(); updateTopDisplays();
+            };
+            card.appendChild(sell);
+        }
+        container.appendChild(card);
+    });
+
+    const skillPool = Object.keys(abilities).filter(id => abilities[id].shopAvailable !== false);
+    skillPool.forEach(id => {
+        if (playerHasSkill(id)) return;
+        const skill = abilities[id];
+        const card = document.createElement("div");
+        card.className = "shopItem";
+        const button = document.createElement("button");
+        const key = `skill:${id}`;
+        const cost = shopPrice(150 + (skill.clashPower * 15), key);
+        button.disabled = run.cost < cost;
+        button.textContent = `BUY SKILL — ${cost} COST`;
+        button.addEventListener("click", () => {
+            if (run.cost < cost) return;
+            if (!acquireOrReplaceSkill(id)) return;
+            run.cost -= cost;
+            increaseShopPrice(key);
+            updateShop();
+            updateTopDisplays();
+        });
+        card.innerHTML = `<h3>LEARN: ${skill.name}</h3><p>${skillFullDescription(skill)}</p>`;
+        card.appendChild(button);
+        container.appendChild(card);
+    });
+
+    player.skills.forEach((skill, index) => {
+        const card = document.createElement("div");
+        card.className = "shopItem";
+        const stats = [
+            ["coin", "+3% COIN POWER"],
+            ["clash", "+1 CLASH POWER"],
+            ...(skill.type === "attack" ? [["damage", "+2 BASE DAMAGE"]] : []),
+            ["min", "+1 MIN COIN"],
+            ["max", "+1 MAX COIN"]
+        ];
+        card.innerHTML = `<h3>UPGRADE: ${skill.name}</h3><p>Upgrade this equipped skill. Upgrades are permanent for this run.</p>`;
+        stats.forEach(([stat, label]) => {
+            const b = document.createElement("button");
+            const cost = skillUpgradeCost(skill, stat);
+            const maxed = skillStatMaxed(skill, stat);
+            b.textContent = maxed ? `${label} — MAXXED` : `${label} — ${cost} COST`;
+            b.disabled = run.cost < cost || maxed;
+            b.addEventListener("click", () => {
+                if (run.cost < cost) return;
+                run.cost -= cost;
+                upgradePlayerSkill(skill, stat);
+                increaseShopPrice(`upgrade:${skill.id || skill.name}:${stat}`);
+                updateShop();
+                updateTopDisplays();
+            });
+            card.appendChild(b);
+        });
+        container.appendChild(card);
+    });
+
+    upgrades.forEach(
+        upgrade => {
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+            card.className =
+                "shopItem";
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+            const unavailable =
+                upgrade.condition &&
+                !upgrade.condition();
+
+            button.disabled =
+                run.cost <
+                upgrade.cost ||
+                unavailable;
+
+            button.textContent =
+                unavailable
+                    ? "MAXED"
+                    : `BUY — ${upgrade.cost} COST`;
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    if (
+                        run.cost <
+                        upgrade.cost
+                    ) return;
+
+                    run.cost -=
+                        upgrade.cost;
+
+                    upgrade.action();
+                    const priceKey = upgrade.name === "SHARPEN WEAPON" ? "general:sharpen" :
+                        upgrade.name === "EXTRA SKILL SLOT" ? "general:slot" :
+                        upgrade.name === "REINFORCED EDGE" ? "general:hp" :
+                        upgrade.name === "HP REFILL" ? "general:refill" : "general:sanity";
+                    increaseShopPrice(priceKey);
+
+                    updateShop();
+
+                    updateTopDisplays();
+                }
+            );
+
+            card.innerHTML = `
+                <h3>
+                    ${upgrade.name}
+                </h3>
+
+                <p>
+                    ${upgrade.description}
+                </p>
+            `;
+
+            card.appendChild(
+                button
+            );
+
+            container.appendChild(
+                card
+            );
+        }
+    );
+}
+
+const floorMutations = [
+    { name:"SECOND WIND", player:{maxHPMult:1.05}, enemy:{coinPowerAdd:.05}, text:"Gain +5% max HP. All enemies gain +5% coin power." },
+    { name:"FOCUS", player:{coinPowerAdd:.05}, enemy:{damageMult:1.05}, text:"Gain +5% coin power. All enemies deal +5% damage." },
+    { name:"THICK BLOOD", player:{maxHPFlat:12}, enemy:{hpMult:1.08}, text:"Gain +12 max HP. All enemies gain +8% HP." },
+    { name:"DESPERATE EDGE", player:{damageMult:1.08}, enemy:{coinPowerAdd:.04}, text:"Deal +8% damage. All enemies gain +4% coin power." },
+    { name:"CALM MIND", player:{coinPowerAdd:.03, maxHPMult:1.03}, enemy:{damageMult:1.06}, text:"Gain +3% coin power and +3% max HP. Enemies deal +6% damage." }
+];
+
+const floorEnemyBuffs = [
+  {name:"IRON HIDE", hpMult:1.05, text:"All enemies gain +5% maximum HP."},
+  {name:"KEEN COINS", coinPowerAdd:.05, text:"All enemies gain +5% coin power."},
+  {name:"LONG EDGE", maxAdditive:1, text:"All enemy skills gain +1 maximum coin additive."},
+  {name:"SHORT EDGE", minAdditive:1, text:"All enemy skills gain +1 minimum coin additive."},
+  {name:"CLOSING FORCE", clashPower:1, text:"All enemy skills gain +1 Clash Power."},
+  {name:"BLOOD PRICE", damageMult:1.05, text:"All enemies deal +5% damage."},
+  {name:"OPENING MIND", startingSP:1, text:"All enemies begin every battle with +1 SP."}
+];
+
+async function showEnemyBuffPopup(buff) {
+  const popup=document.getElementById("enemyBuffPopup");
+  const text=document.getElementById("enemyBuffPopupText");
+  const btn=document.getElementById("enemyBuffPopupContinue");
+  if(!popup) return;
+  text.innerHTML=`<strong>${buff.name}</strong><br>${buff.text}<br><small>This buff remains active for Floor ${run.floor} and every later floor.</small>`;
+  popup.hidden=false;
+  await new Promise(resolve=>btn.onclick=()=>{popup.hidden=true;resolve();});
+}
+
+function showFloorMutationChoice() {
+    const box = document.getElementById("floorChoices");
+    box.innerHTML = "";
+    shuffle([...floorMutations]).slice(0,3).forEach(option => {
+        const card = document.createElement("div");
+        card.className = "floorChoice";
+        card.innerHTML = `<h3>${option.name}</h3><p>${option.text}</p><div class="trade">THIS FLOOR'S TRADE</div>`;
+        const button = document.createElement("button");
+        button.textContent = "ACCEPT";
+        button.addEventListener("click", () => applyFloorMutation(option));
+        card.appendChild(button);
+        box.appendChild(card);
+    });
+    showScreen(floorChoiceScreen);
+}
+
+function applyFloorMutation(option) {
+    run.floorBuff = option.player;
+    run.enemyBuff = option.enemy;
+    run.playerBuffs ||= {coinPowerAdd:0, damageMult:1, maxHPMult:1, maxHPFlat:0};
+    run.enemyBuffs ||= {hpMult:1, coinPowerAdd:0, damageMult:1, minAdditive:0, maxAdditive:0, clashPower:0, startingSP:0};
+    run.playerBuffs.coinPowerAdd += Number(option.player.coinPowerAdd||0);
+    run.playerBuffs.damageMult *= Number(option.player.damageMult||1);
+    run.playerBuffs.maxHPMult *= Number(option.player.maxHPMult||1);
+    run.playerBuffs.maxHPFlat += Number(option.player.maxHPFlat||0);
+    run.enemyBuffs.hpMult *= Number(option.enemy.hpMult||1);
+    run.enemyBuffs.coinPowerAdd += Number(option.enemy.coinPowerAdd||0);
+    run.enemyBuffs.damageMult *= Number(option.enemy.damageMult||1);
+    run.enemyBuffs.minAdditive += Number(option.enemy.minAdditive||0);
+    run.enemyBuffs.maxAdditive += Number(option.enemy.maxAdditive||0);
+    run.enemyBuffs.clashPower += Number(option.enemy.clashPower||0);
+    run.enemyBuffs.startingSP += Number(option.enemy.startingSP||0);
+    run.floor++;
+    const newEnemyBuff = randomItem(floorEnemyBuffs);
+    run.floorEnemyBuffs.push(newEnemyBuff);
+    run.enemyBuffs.hpMult *= Number(newEnemyBuff.hpMult||1);
+    run.enemyBuffs.coinPowerAdd += Number(newEnemyBuff.coinPowerAdd||0);
+    run.enemyBuffs.damageMult *= Number(newEnemyBuff.damageMult||1);
+    run.enemyBuffs.minAdditive += Number(newEnemyBuff.minAdditive||0);
+    run.enemyBuffs.maxAdditive += Number(newEnemyBuff.maxAdditive||0);
+    run.enemyBuffs.clashPower += Number(newEnemyBuff.clashPower||0);
+    run.enemyBuffs.startingSP += Number(newEnemyBuff.startingSP||0);
+    // Apply the player's max HP component once.
+    if (option.player.maxHPMult) {
+        const oldMax = player.maxHP;
+        player.maxHP = Math.floor(player.maxHP * option.player.maxHPMult);
+        player.hp += player.maxHP - oldMax;
+    }
+    if (option.player.maxHPFlat) { player.maxHP += option.player.maxHPFlat; player.hp += option.player.maxHPFlat; }
+    generateFloor();
+    updateTopDisplays();
+    showScreen(dungeonScreen);
+    showEnemyBuffPopup(newEnemyBuff);
+}
+
+document.getElementById("leaveShop").addEventListener("click", () => {
+    // The shop always precedes the next floor's risk/reward mutation choice.
+    showFloorMutationChoice();
+});
+
+/* =========================================================
+   HOW TO PLAY
+========================================================= */
+
+document.getElementById(
+    "howButton"
+).addEventListener(
+    "click",
+    () => {
+
+        alert(
+`COIN CLASH
+
+Choose abilities for your skill slots.
+
+Attacks clash when both sides attack.
+
+Each clash roll compares the final
+coin-powered number.
+
+The loser breaks one coin.
+
+The clash continues until one side
+has no coins.
+
+The winner attacks with its remaining
+coins.
+
+Guards compare their roll against
+the incoming attack.
+
+If the Guard wins, no damage is taken.
+
+Enemies generate a new attack chain
+every turn.
+
+They can:
+• repeat attacks
+• change attack order
+• use Guards
+• become more defensive when injured
+
+Build your chain carefully.
+
+STAGGER: dropping below half HP causes one turn of STAGGERED.
+A staggered fighter cannot act and takes double damage.
+HP persists between encounters; only shops can restore it.
+Sanity ranges from -50 to +50 and changes coin power.
+Enemy modifiers alter their strengths and weaknesses.
+Death resets the entire run to Floor 1.`
+        );
+    }
+);
+
+/* =========================================================
+   START RUN BUTTON
+========================================================= */
+
+document.getElementById(
+    "startRunButton"
+).addEventListener(
+    "click",
+    startRun
+);
+
+/* =========================================================
+   MAIN MENU BUTTON
+========================================================= */
+
+document.getElementById(
+    "resultMenu"
+).addEventListener(
+    "click",
+    () => {
+
+        run.active = false;
+
+        showScreen(
+            menuScreen
+        );
+    }
+);
+
+/* =========================================================
+   INITIAL STATE
+========================================================= */
+
+showScreen(
+    menuScreen
+);
+
+</script>
+
+
+<script>
+function renderPlayerSkillInspection(skill){
+  const id=skill?.id||skill;
+  const effect=abilityEffectText(id);
+  const current=skill?.coinPower ?? skill?.coin_power ?? skill?.coinPowerBase;
+  const sp=(window.player?.sp||0);
+  const spBonus=sp*0.007; // ±35% at ±50 SP
+  const floorBonus=window.run?.playerCoinPowerBonus||0;
+  const total=(current==null?null:Math.min(.99,current+spBonus+floorBonus));
+  return {
+    baseCoinPower:current,
+    currentCoinPower:total,
+    sanityModifier:spBonus,
+    selectionModifier:floorBonus,
+    effect
+  };
+}
+function renderRelicInspection(){
+  const r=window.run&&RELICS.find(x=>x.id===window.run.equippedRelicId);
+  return r?`${r.name}: ${r.desc}`:"No relic equipped";
+}
+window.renderPlayerSkillInspection=renderPlayerSkillInspection;
+window.renderRelicInspection=renderRelicInspection;
+</script>
+</body>
+</html>
